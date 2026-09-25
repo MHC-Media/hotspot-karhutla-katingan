@@ -134,9 +134,9 @@
         <!-- Panel Filter -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-1.5">
-                <label for="rk-village" class="text-xs font-bold text-slate-700 uppercase tracking-wider">Pilih Wilayah / Kelurahan:</label>
+                <label for="rk-village" class="text-xs font-bold text-slate-700 uppercase tracking-wider">Pilih Wilayah / Kecamatan:</label>
                 <select id="rk-village" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
-                    <option value="">-- Semua Wilayah (Kab. Katingan) --</option>
+                    <option value="">-- Semua Wilayah (Kabupaten Katingan) --</option>
                 </select>
             </div>
             <div class="space-y-1.5">
@@ -191,7 +191,7 @@
                     <thead>
                         <tr class="bg-slate-50 text-slate-700 border-b border-slate-200 font-semibold">
                             <th class="py-3 px-4 rounded-l-xl">Tanggal & Waktu Satelit</th>
-                            <th class="py-3 px-4">Wilayah / Kelurahan</th>
+                            <th class="py-3 px-4">Wilayah</th>
                             <th class="py-3 px-4">Satelit</th>
                             <th class="py-3 px-4">Confidence</th>
                             <th class="py-3 px-4">FRP</th>
@@ -210,7 +210,7 @@
 <footer class="mt-auto border-t border-slate-200 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
         <p class="text-xs text-slate-500 font-medium">
-            Penata Kelola Sistem dan Teknologi Informasi Kabupaten Katingan
+            POSLAP Terpadu Karhutla Kabupaten Katingan
         </p>
         <p class="text-xs text-slate-500 font-medium mt-1">
             MHC 2026
@@ -222,7 +222,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <script>
-        const GAS_API_URL = "ISI_URL_WEB_APP_ANDA_DISINI"; // Ganti dengan URL deployment Web App Apps Script Anda
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzDy7KVJ14yuRZEsky3cXswC5PJxu7uT2PIfcy66pi26ImNKbtJt4o20FF1LYmGJtpY/exec"; 
         let globalFilteredHotspots = [];
         let currentTimeRange = 'TODAY';
 
@@ -243,27 +243,41 @@
 
         const GEOJSON = {
             "type": "FeatureCollection",
-            "name": "Katingan's Region",
+            "name": "Katingan Region",
             "features": [
                 {
                     "type": "Feature",
-                    "properties": { "village_code": "id6206051001", "village": "Kasongan Lama", "district": "Katingan Hilir" },
+                    "properties": { "village_code": "id620601", "village": "Katingan Kuala", "district": "Katingan Kuala" },
                     "geometry": { "type": "MultiPolygon", "coordinates": [[[
-                        [113.35,-1.90],[113.40,-1.90],[113.40,-1.85],[113.35,-1.85],[113.35,-1.90]
+                        [113.50,-3.20],[113.70,-3.20],[113.70,-3.40],[113.50,-3.40],[113.50,-3.20]
                     ]]] }
                 },
                 {
                     "type": "Feature",
-                    "properties": { "village_code": "id6206052002", "village": "Hampalit", "district": "Katingan Hilir" },
+                    "properties": { "village_code": "id620605", "village": "Katingan Tengah", "district": "Katingan Tengah" },
                     "geometry": { "type": "MultiPolygon", "coordinates": [[[
-                        [113.30,-1.95],[113.35,-1.95],[113.35,-1.90],[113.30,-1.90],[113.30,-1.95]
+                        [113.30,-1.50],[113.60,-1.50],[113.60,-1.80],[113.30,-1.80],[113.30,-1.50]
                     ]]] }
                 },
                 {
                     "type": "Feature",
-                    "properties": { "village_code": "id6206082001", "village": "Samba Danum", "district": "Katingan Tengah" },
+                    "properties": { "village_code": "id620603", "village": "Katingan Hilir", "district": "Katingan Hilir" },
                     "geometry": { "type": "MultiPolygon", "coordinates": [[[
-                        [116.30,-1.20],[116.35,-1.20],[116.35,-1.15],[116.30,-1.15],[116.30,-1.20]
+                        [113.35,-1.85],[113.55,-1.85],[113.55,-2.10],[113.35,-2.10],[113.35,-1.85]
+                    ]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "village_code": "id620604", "village": "Tasik Payawan", "district": "Tasik Payawan" },
+                    "geometry": { "type": "MultiPolygon", "coordinates": [[[
+                        [113.50,-1.90],[113.70,-1.90],[113.70,-2.15],[113.50,-2.15],[113.50,-1.90]
+                    ]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "village_code": "id620606", "village": "Tewang Sangalang Garing", "district": "Tewang Sangalang Garing" },
+                    "geometry": { "type": "MultiPolygon", "coordinates": [[[
+                        [113.40,-1.70],[113.55,-1.70],[113.55,-1.90],[113.40,-1.90],[113.40,-1.70]
                     ]]] }
                 }
             ]
@@ -273,7 +287,7 @@
         var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Tiles &copy; Esri' });
 
         var map = L.map('gis-map', {
-            center: [-1.85, 113.40],
+            center: [-2.0, 113.5],
             zoom: 9,
             layers: [osmLayer]
         });
@@ -290,9 +304,11 @@
 
         function getVillageColor(code) {
             switch (code) {
-                case 'id6206051001': return '#e74c3c';
-                case 'id6206052002': return '#3498db';
-                case 'id6206082001': return '#2ecc71';
+                case 'id620601': return '#e74c3c';
+                case 'id620603': return '#3498db';
+                case 'id620604': return '#2ecc71';
+                case 'id620605': return '#9b59b6';
+                case 'id620606': return '#e67e22';
                 default: return '#95a5a6';
             }
         }
@@ -313,15 +329,15 @@
             onEachFeature: function(feature, layer) {
                 var vName = feature.properties.village;
                 var vCode = feature.properties.village_code || "-";
-                var dName = feature.properties.district || "Katingan Hilir";
+                var dName = feature.properties.district || "Katingan";
                 var cityName = "Kabupaten Katingan";
 
                 var areaSqKm = turf.area(feature) / 1000000;
                 var areaFormatted = areaSqKm.toFixed(2) + " km²";
 
                 villageLayers[vName] = layer;
-
                 var villageColor = getVillageColor(vCode);
+
                 layer.bindPopup(
                     `<div class="w-64 overflow-hidden rounded-2xl">` +
                         `<div class="relative px-4 py-3.5 flex items-center gap-2.5" style="background:${villageColor}">` +
@@ -329,32 +345,23 @@
                                 `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="w-4.5 h-4.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.5-4.2-7-8-7-11a7 7 0 1114 0c0 3-2.5 6.8-7 11z"/><circle cx="12" cy="10" r="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>` +
                             `</div>` +
                             `<div class="flex-1 min-w-0">` +
-                                `<div class="text-white font-bold text-sm leading-tight">${esc(vName)}</div>` +
-                                `<div class="text-white/80 text-[10px] font-medium">Kecamatan ${esc(dName)}</div>` +
+                                `<div class="text-white font-bold text-sm leading-tight">${vName}</div>` +
+                                `<div class="text-white/80 text-[10px] font-medium">Kecamatan ${dName}</div>` +
                             `</div>` +
                         `</div>` +
                         `<div class="bg-white px-4 py-3.5 space-y-2.5 text-xs">` +
                             `<div class="flex items-center justify-between">` +
                                 `<span class="text-slate-400 font-medium">ID Wilayah</span>` +
-                                `<span class="text-slate-800 font-bold font-mono text-[11px]">${esc(vCode)}</span>` +
+                                `<span class="text-slate-800 font-bold font-mono text-[11px]">${vCode}</span>` +
                             `</div>` +
                             `<div class="flex items-center justify-between">` +
                                 `<span class="text-slate-400 font-medium">Luas Wilayah</span>` +
-                                `<span class="text-slate-800 font-bold">${esc(areaFormatted)}</span>` +
-                            `</div>` +
-                            `<div class="flex items-center justify-between pt-2.5 mt-1 border-t border-dashed border-slate-200">` +
-                                `<span class="text-slate-400 font-medium">Kecamatan / Kab</span>` +
-                                `<span class="text-slate-800 font-bold text-right">${esc(dName)}, ${esc(cityName)}</span>` +
+                                `<span class="text-slate-800 font-bold">${areaFormatted}</span>` +
                             `</div>` +
                         `</div>` +
                     `</div>`,
                     { className: 'hotspot-popup', minWidth: 256 }
                 );
-
-                layer.on({
-                    mouseover: function(e) { e.target.setStyle({ weight: 3, fillOpacity: 0.8 }); },
-                    mouseout: function(e) { geoJsonLayer.resetStyle(e.target); }
-                });
 
                 var opt = document.createElement('option');
                 opt.value = vName;
@@ -365,35 +372,14 @@
 
         map.fitBounds(geoJsonLayer.getBounds());
 
-        function esc(str) {
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        function formatSatelliteTime(timeStr) {
-            if (!timeStr || timeStr === "-") return "-";
-            const daysMap = { 'Sun': 'Minggu', 'Mon': 'Senin', 'Tue': 'Selasa', 'Wed': 'Rabu', 'Thu': 'Kamis', 'Fri': 'Jumat', 'Sat': 'Sabtu' };
-            const monthsMap = { 'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr', 'May': 'Mei', 'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Agu', 'Sep': 'Sep', 'Oct': 'Okt', 'Nov': 'Nov', 'Dec': 'Des' };
-            for (let [enDay, idDay] of Object.entries(daysMap)) { if (timeStr.startsWith(enDay)) { timeStr = timeStr.replace(enDay, idDay); break; } }
-            for (let [enMon, idMon] of Object.entries(monthsMap)) { if (timeStr.includes(enMon)) { timeStr = timeStr.replace(enMon, idMon); break; } }
-            if (!timeStr.endsWith("WIB")) timeStr += " WIB";
-            return timeStr;
-        }
-
-        function updateTimeRangeButtons() {
-            document.querySelectorAll('.time-range-btn').forEach(btn => {
-                const isActive = btn.dataset.range === currentTimeRange;
-                btn.classList.toggle('bg-emerald-600', isActive);
-                btn.classList.toggle('text-white', isActive);
-                btn.classList.toggle('shadow-sm', isActive);
-                btn.classList.toggle('text-slate-500', !isActive);
-            });
-        }
+        document.getElementById('btn-refresh-data').addEventListener('click', () => fetchRealtimeData(false));
+        document.getElementById('btn-update-satellite').addEventListener('click', () => fetchRealtimeData(true));
 
         async function fetchRealtimeData(isUpdate = false) {
             let btn = document.getElementById('btn-update-satellite');
             if (isUpdate) {
                 btn.disabled = true;
-                btn.innerHTML = `Menarik Data...`;
+                btn.innerHTML = `Memuat...`;
             }
 
             let rawHotspotData = [];
@@ -401,114 +387,19 @@
                 const queryParams = (isUpdate ? 'action=update&' : '') + '_=' + Date.now();
                 const response = await fetch(`${GAS_API_URL}?${queryParams}`, { cache: 'no-store' });
                 const result = await response.json();
-                if (result && Array.isArray(result.data)) rawHotspotData = result.data;
-                if (isUpdate) alert("Berhasil menarik data satelit terbaru untuk Kabupaten Katingan!");
+                if (result && Array.isArray(result.data)) {
+                    rawHotspotData = result.data;
+                }
+                if (isUpdate) alert("Data berhasil diperbarui!");
             } catch (err) {
-                console.error("Gagal mengambil data:", err);
-                if (isUpdate) alert("Gagal memperbarui data satelit.");
+                console.error(err);
             } finally {
                 if (isUpdate) {
                     btn.disabled = false;
-                    btn.innerHTML = `<span class="hidden sm:inline">Update Data Satelit</span>`;
+                    btn.innerHTML = `Update Data Satelit`;
                 }
             }
-
-            const selectedVillage = villageSelect.value;
-            const selectedSat = document.getElementById('satellite-filter').value;
-            const selectedTimeRange = currentTimeRange;
-            const todayWIB = getTodayWIB();
-            const nowMillis = Date.now();
-
-            hotspotGroup.clearLayers();
-            let filtered = [];
-
-            rawHotspotData.forEach(item => {
-                let lat = parseFloat(item.latitude || item.lat || 0);
-                let lng = parseFloat(item.longitude || item.lng || 0);
-                if (lat === 0 || lng === 0) return;
-
-                let formattedTime = formatSatelliteTime(item.time || "-");
-                let hObj = {
-                    lat: lat, lng: lng,
-                    village: item.village || "Katingan",
-                    satellite: item.satellite || "VIIRS",
-                    confidence: parseInt(item.confidence) || 50,
-                    frp: item.frp !== undefined ? parseFloat(item.frp) : 0.0,
-                    time: formattedTime
-                };
-
-                let matchVillage = !selectedVillage || hObj.village === selectedVillage;
-                let matchSat = selectedSat === 'ALL' || hObj.satellite.toUpperCase().includes(selectedSat.toUpperCase());
-                let matchTime = selectedTimeRange === 'TODAY' ? hObj.time.slice(0, 10) === todayWIB : parseHotspotEpochUTC(hObj.time) >= (nowMillis - 24 * 3600 * 1000);
-
-                if (matchVillage && matchSat && matchTime) filtered.push(hObj);
-            });
-
-            filtered.sort((a, b) => (Date.parse(b.time.replace(" WIB", "")) || 0) - (Date.parse(a.time.replace(" WIB", "")) || 0));
-            globalFilteredHotspots = filtered;
-
-            let tableRowsHtml = '';
-            let highConfCount = 0, maxFrpVal = 0;
-            let affectedSet = new Set();
-
-            if (filtered.length === 0) {
-                tableRowsHtml = `<tr><td colspan="6" class="py-8 text-center text-slate-400 italic">Tidak ada titik panas yang ditemukan sesuai filter.</td></tr>`;
-            } else {
-                filtered.forEach(h => {
-                    affectedSet.add(h.village);
-                    if (h.confidence >= 80) highConfCount++;
-                    if (h.frp > maxFrpVal) maxFrpVal = h.frp;
-
-                    let markerColor = h.confidence >= 80 ? '#dc2626' : '#f59e0b';
-                    let routeUrl = `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`;
-
-                    L.circleMarker([h.lat, h.lng], { radius: 8, fillColor: markerColor, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(hotspotGroup);
-
-                    tableRowsHtml += `<tr class="hover:bg-slate-50 transition-colors">
-                        <td class="py-3 px-4 font-semibold text-slate-700">${esc(h.time)}</td>
-                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700">${esc(h.village)}</span></td>
-                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">${esc(h.satellite)}</span></td>
-                        <td class="py-3 px-4 font-bold ${h.confidence >= 80 ? 'text-rose-600' : 'text-amber-600'}">${h.confidence}%</td>
-                        <td class="py-3 px-4 font-bold text-slate-700">${h.frp.toFixed(1)} MW</td>
-                        <td class="py-3 px-4">
-                            <a href="${routeUrl}" target="_blank" class="route-btn">Navigasi Maps</a>
-                        </td>
-                    </tr>`;
-                });
-            }
-
-            document.getElementById('hotspot-table-body').innerHTML = tableRowsHtml;
-            document.getElementById('total-hotspot').textContent = filtered.length;
-            document.getElementById('high-confidence').textContent = highConfCount;
-            document.getElementById('affected-villages').textContent = affectedSet.size;
-            document.getElementById('max-frp').innerHTML = maxFrpVal.toFixed(1) + ` <span class="text-sm font-bold">MW</span>`;
-            document.getElementById('last-update-time').textContent = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';
         }
-
-        document.getElementById('btn-update-satellite').addEventListener('click', () => fetchRealtimeData(true));
-        document.getElementById('btn-refresh-data').addEventListener('click', () => fetchRealtimeData(false));
-        villageSelect.addEventListener('change', () => fetchRealtimeData(false));
-        document.getElementById('satellite-filter').addEventListener('change', () => fetchRealtimeData(false));
-
-        document.querySelectorAll('.time-range-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                currentTimeRange = e.target.dataset.range;
-                updateTimeRangeButtons();
-                fetchRealtimeData(false);
-            });
-        });
-
-        document.getElementById('btn-whatsapp-report').addEventListener('click', () => {
-            let msg = `*LAPORAN SIAGA KARHUTLA KABUPATEN KATINGAN*\n` +
-                      `Total Titik Panas: ${globalFilteredHotspots.length}\n` +
-                      `Waktu: ${new Date().toLocaleString('id-ID')}\n\n` +
-                      `Sistem Pemantauan Terpadu Karhutla`;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-        });
-
-        updateTimeRangeButtons();
-        fetchRealtimeData(false);
-        setInterval(() => fetchRealtimeData(false), 300000);
     </script>
 </body>
 </html>
