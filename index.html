@@ -137,7 +137,7 @@
                 <h2 class="text-2xl sm:text-3xl font-black tracking-tight">Dashboard Siaga Kebakaran Hutan & Lahan</h2>
                 <div class="w-16 h-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-200/40"></div>
                 <p class="text-emerald-100 text-sm max-w-2xl font-normal leading-relaxed">
-                    Pengawasan terpadu titik panas (hotspot) multi-satelit untuk seluruh wilayah administratif Kabupaten Katingan (13 kecamatan, 161 desa/kelurahan).
+                    Pengawasan terpadu titik panas (hotspot) multi-satelit untuk seluruh wilayah administratif Kabupaten Katingan (13 kecamatan, 154 desa dan 7 kelurahan).
                 </p>
             </div>
 
@@ -237,7 +237,7 @@
                         </tr>
                     </thead>
                     <tbody id="hotspot-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
-                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari database...</td></tr>
+                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari spreadsheet...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -251,7 +251,7 @@
             Penata Kelola Sistem dan Teknologi Informasi
         </p>
         <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
-            MEMET HARIYADI CHRISTIAN, S.T - ©2026
+            MEMET HARIYADI CHRISTIAN, S.T -  ©2026
         </p>
     </div>
 </footer>
@@ -591,6 +591,12 @@
                 const queryParams = (isUpdate ? 'action=update&' : '') + '_=' + Date.now();
                 const response = await fetch(`${GAS_API_URL}?${queryParams}`, { cache: 'no-store' });
                 const result = await response.json();
+
+                console.log('[POSLAP Katingan] Respons mentah dari Apps Script:', result);
+                if (result && result.status === 'error') {
+                    console.warn('[POSLAP Katingan] Backend Apps Script mengembalikan ERROR, bukan data:', result.message);
+                }
+
                 if (result && Array.isArray(result.hotspots)) {
                     rawHotspotData = result.hotspots;
                 } else if (result && Array.isArray(result.data)) {
@@ -625,17 +631,28 @@
             hotspotGroup.clearLayers();
 
             let filtered = [];
+            // --- PENCACAH DIAGNOSTIK ---
+            // Dipakai supaya kalau ada titik yang "hilang" dari peta/tabel, penyebabnya
+            // bisa langsung dilihat lewat Console browser (tekan F12 → tab Console)
+            // tanpa perlu menebak-nebak: apakah lokasinya di luar Katingan, tanggalnya
+            // di luar rentang waktu yang dipilih, atau tersaring oleh filter lain.
+            let diag = { total: rawHotspotData.length, coordKosong: 0, diLuarKatingan: 0, filterWaktu: 0, filterLain: 0, tampil: 0 };
+            let contohDiluar = [];
 
             rawHotspotData.forEach(item => {
                 let lat = parseFloat(item.latitude || item.lat || 0);
                 let lng = parseFloat(item.longitude || item.lng || 0);
 
-                if (lat === 0 || lng === 0) return;
+                if (lat === 0 || lng === 0) { diag.coordKosong++; return; }
 
                 // Buang titik yang berada DI LUAR Kabupaten Katingan (lihat catatan
                 // fungsi isInsideKatingan di atas) — titik ini tidak pernah ditampilkan
                 // di peta, tabel, statistik, maupun laporan WhatsApp.
-                if (!isInsideKatingan(lat, lng)) return;
+                if (!isInsideKatingan(lat, lng)) {
+                    diag.diLuarKatingan++;
+                    if (contohDiluar.length < 5) contohDiluar.push({ lat: lat, lng: lng, waktu: item.time });
+                    return;
+                }
 
                 let rawTime = item.time || item.acq_time || "-";
                 let formattedTime = formatSatelliteTime(rawTime);
@@ -665,8 +682,18 @@
 
                 if (matchKecamatan && matchVillage && matchSat && matchTime) {
                     filtered.push(hObj);
+                    diag.tampil++;
+                } else if (!matchTime) {
+                    diag.filterWaktu++;
+                } else {
+                    diag.filterLain++;
                 }
             });
+
+            console.log('[POSLAP Katingan] Ringkasan data:', diag);
+            if (contohDiluar.length > 0) {
+                console.log('[POSLAP Katingan] Contoh titik yang dianggap DI LUAR Kabupaten Katingan (cek koordinat ini di Google Maps kalau merasa seharusnya masuk):', contohDiluar);
+            }
 
             // LOGIKA PENGURUTAN: Urutkan data dari waktu terbaru ke terlama
             filtered.sort(function(a, b) {
