@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Titik Panas - HOTSPOT TERPADU KARHUTLA KABUPATEN KATINGAN</title>
+    <title>Monitoring Titik Panas - POSLAP TERPADU KARHUTLA KABUPATEN KATINGAN</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -90,7 +90,7 @@
                     PK
                 </div>
                 <div>
-                    <h1 class="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight leading-tight dark:text-slate-100">HOTSPOT TERPADU KARHUTLA</h1>
+                    <h1 class="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight leading-tight dark:text-slate-100">POSLAP TERPADU KARHUTLA</h1>
                     <p class="text-xs font-semibold text-gold">Kabupaten Katingan</p>
                 </div>
             </div>
@@ -137,7 +137,7 @@
                 <h2 class="text-2xl sm:text-3xl font-black tracking-tight">Dashboard Siaga Kebakaran Hutan & Lahan</h2>
                 <div class="w-16 h-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-200/40"></div>
                 <p class="text-emerald-100 text-sm max-w-2xl font-normal leading-relaxed">
-                    Pengawasan terpadu titik panas (hotspot) multi-satelit untuk seluruh wilayah administratif Kabupaten Katingan (13 kecamatan, 154 desa dan 7 kelurahan).
+                    Pengawasan terpadu titik panas (hotspot) multi-satelit untuk seluruh wilayah administratif Kabupaten Katingan (13 kecamatan, 161 desa/kelurahan).
                 </p>
             </div>
 
@@ -237,7 +237,7 @@
                         </tr>
                     </thead>
                     <tbody id="hotspot-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
-                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari database...</td></tr>
+                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari spreadsheet...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -248,10 +248,10 @@
 <footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
         <p class="text-xs text-slate-500 font-medium dark:text-slate-400">
-            Penata Kelola Sistem dan Teknologi Informasi 
+            Penata Kelola Sistem dan Teknologi Informasi Kabupaten Katingan
         </p>
         <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
-            MEMET HARIYADI CHRISTIAN, S.T - ©2026
+            MHC 2026
         </p>
     </div>
 </footer>
@@ -820,7 +820,7 @@
             let rangeText = rangeLabels[currentTimeRange] || 'Hari Ini';
 
             let message = `🚨 *LAPORAN MONITORING TITIK PANAS (HOTSPOT)*\n`;
-            message += `📍 *Hotspot Terpadu Kabupaten Katingan*\n`;
+            message += `📍 *Poslap Terpadu Kabupaten Katingan*\n`;
             message += `🗓️ *Rentang Data:* ${rangeText}\n`;
             message += `🕒 *Update Data Dashboard:* ${updateTimeText}\n`;
             message += `📊 Total Titik Terpantau: ${globalFilteredHotspots.length}\n\n`;
