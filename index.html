@@ -237,7 +237,7 @@
                         </tr>
                     </thead>
                     <tbody id="hotspot-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
-                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari database...</td></tr>
+                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari spreadsheet...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -248,10 +248,10 @@
 <footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
         <p class="text-xs text-slate-500 font-medium dark:text-slate-400">
-            Penata Kelola Sistem dan Teknologi Informasi 
+            Penata Kelola Sistem dan Teknologi Informasi  
         </p>
         <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
-            MEMET HARIYADI CHRISTIAN, S.T - ©2026
+            MEMET HARIYADI CHRISTIAN, S.T ©2026
         </p>
     </div>
 </footer>
@@ -533,34 +533,6 @@
             });
         }
 
-        // --- FILTER LOKASI SISI-KLIEN (lapisan pengaman tambahan) ---
-        // Backend (Code.gs) sudah membuang titik di luar Kabupaten Katingan sebelum
-        // ditulis ke Spreadsheet, tapi di sini kita CEK ULANG setiap titik terhadap
-        // 161 poligon desa/kelurahan yang sama. Ini menjaga dashboard tetap benar
-        // walau ada baris lama di Spreadsheet (mis. sisa konfigurasi sebelumnya)
-        // yang belum sempat dibersihkan atau backend belum di-deploy ulang.
-        function isPointInPolygonRing(x, y, ring) {
-            let inside = false;
-            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-                const xi = ring[i][0], yi = ring[i][1];
-                const xj = ring[j][0], yj = ring[j][1];
-                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-                if (intersect) inside = !inside;
-            }
-            return inside;
-        }
-
-        function isInsideKatingan(lat, lng) {
-            for (const feature of GEOJSON.features) {
-                const polygons = feature.geometry.coordinates;
-                for (let p = 0; p < polygons.length; p++) {
-                    const ring = polygons[p][0];
-                    if (isPointInPolygonRing(lng, lat, ring)) return true;
-                }
-            }
-            return false;
-        }
-
         // Warna khas per satelit dipakai untuk badge di tabel & popup
         const SATELLITE_COLORS = {
             'SNPP': '#f59e0b',
@@ -591,12 +563,6 @@
                 const queryParams = (isUpdate ? 'action=update&' : '') + '_=' + Date.now();
                 const response = await fetch(`${GAS_API_URL}?${queryParams}`, { cache: 'no-store' });
                 const result = await response.json();
-
-                console.log('[POSLAP Katingan] Respons mentah dari Apps Script:', result);
-                if (result && result.status === 'error') {
-                    console.warn('[POSLAP Katingan] Backend Apps Script mengembalikan ERROR, bukan data:', result.message);
-                }
-
                 if (result && Array.isArray(result.hotspots)) {
                     rawHotspotData = result.hotspots;
                 } else if (result && Array.isArray(result.data)) {
@@ -631,28 +597,12 @@
             hotspotGroup.clearLayers();
 
             let filtered = [];
-            // --- PENCACAH DIAGNOSTIK ---
-            // Dipakai supaya kalau ada titik yang "hilang" dari peta/tabel, penyebabnya
-            // bisa langsung dilihat lewat Console browser (tekan F12 → tab Console)
-            // tanpa perlu menebak-nebak: apakah lokasinya di luar Katingan, tanggalnya
-            // di luar rentang waktu yang dipilih, atau tersaring oleh filter lain.
-            let diag = { total: rawHotspotData.length, coordKosong: 0, diLuarKatingan: 0, filterWaktu: 0, filterLain: 0, tampil: 0 };
-            let contohDiluar = [];
 
             rawHotspotData.forEach(item => {
                 let lat = parseFloat(item.latitude || item.lat || 0);
                 let lng = parseFloat(item.longitude || item.lng || 0);
 
-                if (lat === 0 || lng === 0) { diag.coordKosong++; return; }
-
-                // Buang titik yang berada DI LUAR Kabupaten Katingan (lihat catatan
-                // fungsi isInsideKatingan di atas) — titik ini tidak pernah ditampilkan
-                // di peta, tabel, statistik, maupun laporan WhatsApp.
-                if (!isInsideKatingan(lat, lng)) {
-                    diag.diLuarKatingan++;
-                    if (contohDiluar.length < 5) contohDiluar.push({ lat: lat, lng: lng, waktu: item.time });
-                    return;
-                }
+                if (lat === 0 || lng === 0) return;
 
                 let rawTime = item.time || item.acq_time || "-";
                 let formattedTime = formatSatelliteTime(rawTime);
@@ -682,18 +632,8 @@
 
                 if (matchKecamatan && matchVillage && matchSat && matchTime) {
                     filtered.push(hObj);
-                    diag.tampil++;
-                } else if (!matchTime) {
-                    diag.filterWaktu++;
-                } else {
-                    diag.filterLain++;
                 }
             });
-
-            console.log('[POSLAP Katingan] Ringkasan data:', diag);
-            if (contohDiluar.length > 0) {
-                console.log('[POSLAP Katingan] Contoh titik yang dianggap DI LUAR Kabupaten Katingan (cek koordinat ini di Google Maps kalau merasa seharusnya masuk):', contohDiluar);
-            }
 
             // LOGIKA PENGURUTAN: Urutkan data dari waktu terbaru ke terlama
             filtered.sort(function(a, b) {
