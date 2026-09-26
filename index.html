@@ -237,7 +237,7 @@
                         </tr>
                     </thead>
                     <tbody id="hotspot-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
-                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari spreadsheet...</td></tr>
+                        <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari database...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -251,7 +251,7 @@
             Penata Kelola Sistem dan Teknologi Informasi
         </p>
         <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
-            MEMET HARIYADI CHRISTIAN, S.T ©2026
+            MEMET HARIYADI CHRISTIAN, S.T - ©2026
         </p>
     </div>
 </footer>
@@ -533,6 +533,34 @@
             });
         }
 
+        // --- FILTER LOKASI SISI-KLIEN (lapisan pengaman tambahan) ---
+        // Backend (Code.gs) sudah membuang titik di luar Kabupaten Katingan sebelum
+        // ditulis ke Spreadsheet, tapi di sini kita CEK ULANG setiap titik terhadap
+        // 161 poligon desa/kelurahan yang sama. Ini menjaga dashboard tetap benar
+        // walau ada baris lama di Spreadsheet (mis. sisa konfigurasi sebelumnya)
+        // yang belum sempat dibersihkan atau backend belum di-deploy ulang.
+        function isPointInPolygonRing(x, y, ring) {
+            let inside = false;
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const xi = ring[i][0], yi = ring[i][1];
+                const xj = ring[j][0], yj = ring[j][1];
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function isInsideKatingan(lat, lng) {
+            for (const feature of GEOJSON.features) {
+                const polygons = feature.geometry.coordinates;
+                for (let p = 0; p < polygons.length; p++) {
+                    const ring = polygons[p][0];
+                    if (isPointInPolygonRing(lng, lat, ring)) return true;
+                }
+            }
+            return false;
+        }
+
         // Warna khas per satelit dipakai untuk badge di tabel & popup
         const SATELLITE_COLORS = {
             'SNPP': '#f59e0b',
@@ -603,6 +631,11 @@
                 let lng = parseFloat(item.longitude || item.lng || 0);
 
                 if (lat === 0 || lng === 0) return;
+
+                // Buang titik yang berada DI LUAR Kabupaten Katingan (lihat catatan
+                // fungsi isInsideKatingan di atas) — titik ini tidak pernah ditampilkan
+                // di peta, tabel, statistik, maupun laporan WhatsApp.
+                if (!isInsideKatingan(lat, lng)) return;
 
                 let rawTime = item.time || item.acq_time || "-";
                 let formattedTime = formatSatelliteTime(rawTime);
