@@ -248,10 +248,10 @@
 <footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
         <p class="text-xs text-slate-500 font-medium dark:text-slate-400">
-            Penata Kelola Sistem dan Teknologi Informasi  
+            Penata Kelola Sistem dan Teknologi Informasi
         </p>
         <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
-            MEMET HARIYADI CHRISTIAN, S.T ©2026
+            MEMET HARIYADI CHRISTIAN, S.T - ©2026
         </p>
     </div>
 </footer>
@@ -545,6 +545,39 @@
             return SATELLITE_COLORS[name] || '#64748b';
         }
 
+        // ================================================================
+        // VALIDASI SPASIAL TITIK HOTSPOT TERHADAP BATAS KABUPATEN KATINGAN
+        // ----------------------------------------------------------------
+        // PENYEBAB BUG: sebelumnya titik panas dari spreadsheet langsung
+        // digambar apa adanya di (lat, lng) tanpa pernah dicek posisinya
+        // terhadap poligon wilayah Katingan (GEOJSON) — filter kecamatan
+        // hanya mencocokkan TEKS "kecamatan" dari spreadsheet, bukan lokasi
+        // geografis sebenarnya. Akibatnya titik yang koordinatnya salah/​di
+        // luar batas (mis. jatuh di wilayah Rakumpit, Kota Palangka Raya,
+        // yang berbatasan di utara Katingan dan BUKAN bagian dari 13
+        // kecamatan Katingan) tetap ikut tergambar di peta.
+        //
+        // Fix: gunakan Turf.js (booleanPointInPolygon) untuk memastikan
+        // setiap titik benar-benar berada di dalam salah satu poligon
+        // desa/kelurahan Kabupaten Katingan sebelum ditampilkan.
+        function isPointInsideKatingan(lat, lng) {
+            try {
+                var pt = turf.point([lng, lat]);
+                for (var i = 0; i < GEOJSON.features.length; i++) {
+                    try {
+                        if (turf.booleanPointInPolygon(pt, GEOJSON.features[i])) {
+                            return true;
+                        }
+                    } catch (innerErr) {
+                        // Lewati fitur dengan geometri bermasalah, jangan hentikan pengecekan
+                    }
+                }
+            } catch (err) {
+                console.warn('Gagal memvalidasi koordinat hotspot:', lat, lng, err);
+            }
+            return false;
+        }
+
         // Fungsi Utama: Ambil Data dari Google Apps Script & Render Peta/Tabel
         async function fetchRealtimeData(isUpdate) {
             const btn = document.getElementById('btn-update-satellite');
@@ -603,6 +636,16 @@
                 let lng = parseFloat(item.longitude || item.lng || 0);
 
                 if (lat === 0 || lng === 0) return;
+
+                // Buang titik yang koordinatnya jatuh di luar batas administratif
+                // Kabupaten Katingan (mis. salah ketik koordinat, atau titik yang
+                // sebenarnya berada di kabupaten/kota tetangga seperti Rakumpit -
+                // Kota Palangka Raya). Ini mencegah titik "nyasar" tampil di peta
+                // meskipun kolom kecamatan di spreadsheet kosong/​salah.
+                if (!isPointInsideKatingan(lat, lng)) {
+                    console.warn(`Titik hotspot di luar wilayah Kabupaten Katingan diabaikan (lat=${lat}, lng=${lng}, data kecamatan="${item.kecamatan || '-'}")`);
+                    return;
+                }
 
                 let rawTime = item.time || item.acq_time || "-";
                 let formattedTime = formatSatelliteTime(rawTime);
