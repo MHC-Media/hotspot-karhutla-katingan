@@ -21,6 +21,9 @@
     <!-- Turf.js untuk Analisis Spasial Poligon -->
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
+    <!-- Chart.js untuk grafik tren hotspot harian -->
+    <script src="https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
     <style>
         :root { --gold: #c8952a; --gold-light: #f2c14e; }
         .text-gold { color: var(--gold); }
@@ -214,6 +217,25 @@
             <div id="gis-map"></div>
         </div>
 
+        <!-- Statistik & Tren Hotspot Harian per Kecamatan -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-5 dark:bg-slate-900">
+            <div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Statistik Hotspot per Kecamatan (Hari Ini)</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Jumlah titik panas hari ini per kecamatan, lengkap dengan rincian nama desa/kelurahan terdampak.</p>
+            </div>
+            <div id="kecamatan-daily-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div class="col-span-full py-6 text-center text-slate-400 italic text-sm">Memuat statistik harian...</div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-700">
+                <h4 class="text-sm font-bold text-slate-800 mt-4 mb-3 dark:text-slate-100">Tren Jumlah Hotspot per Hari (per Kecamatan)</h4>
+                <div class="relative" style="height:320px;">
+                    <canvas id="hotspot-trend-chart"></canvas>
+                </div>
+                <p id="trend-chart-empty" class="hidden text-center text-slate-400 italic text-sm py-6">Belum cukup data riwayat untuk menampilkan tren harian.</p>
+            </div>
+        </div>
+
         <!-- Tabel -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs overflow-hidden space-y-4 dark:bg-slate-900">
             <div class="flex items-center justify-between flex-wrap gap-3">
@@ -240,6 +262,22 @@
                         <tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Memuat data dari database...</td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Navigasi Halaman Tabel (25 titik panas per halaman) -->
+            <div class="flex items-center justify-between flex-wrap gap-3 pt-2">
+                <span id="table-pagination-info" class="text-xs font-medium text-slate-500 dark:text-slate-400">-</span>
+                <div class="inline-flex items-center gap-2">
+                    <button id="btn-table-prev-page" type="button"
+                        class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                        &larr; Sebelumnya
+                    </button>
+                    <span id="table-pagination-page" class="text-xs font-bold text-slate-700 px-2 dark:text-slate-200">1 / 1</span>
+                    <button id="btn-table-next-page" type="button"
+                        class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                        Berikutnya &rarr;
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -287,6 +325,11 @@
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzDy7KVJ14yuRZEsky3cXswC5PJxu7uT2PIfcy66pi26ImNKbtJt4o20FF1LYmGJtpY/exec";
         let globalFilteredHotspots = [];
         let currentTimeRange = 'TODAY'; // Default: hanya tampilkan data hari ini
+
+        // --- Paginasi Tabel Titik Panas (25 baris per halaman) ---
+        const TABLE_ROWS_PER_PAGE = 25;
+        let currentTablePage = 1;
+        let hotspotTrendChart = null; // instance Chart.js untuk grafik tren harian
 
         // Mengembalikan tanggal hari ini di zona WIB dalam format YYYY-MM-DD,
         // dipakai untuk filter "Hari Ini" (bukan tanggal lokal perangkat).
@@ -546,6 +589,200 @@
         }
 
         // ================================================================
+        // TABEL TITIK PANAS DENGAN PAGINASI (25 BARIS PER HALAMAN)
+        // ================================================================
+        function buildHotspotRowHtml(h) {
+            let routeUrl = `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`;
+            return `
+                <tr class="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800">
+                    <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">${esc(h.time)}</td>
+                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${esc(h.village)}</td>
+                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${esc(h.kecamatan)}</td>
+                    <td class="py-3 px-4 text-slate-700 font-semibold dark:text-slate-300">
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background:${getSatelliteColor(h.satellite)}"></span>${esc(h.satellite)}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs font-bold ${h.confidence >= 80 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}">${h.confidence}%</span></td>
+                    <td class="py-3 px-4 font-bold text-slate-800 dark:text-slate-100">${h.frp} MW</td>
+                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300">Lat ${h.lat}, Long ${h.lng}
+                    <br><a href="${routeUrl}" target="_blank" class="route-btn">Buka di Google Maps</a></br></td>
+                </tr>
+            `;
+        }
+
+        // Merender HANYA 25 baris untuk halaman tabel yang sedang aktif, tanpa
+        // memengaruhi jumlah marker di peta (yang tetap menampilkan seluruh
+        // titik panas hasil filter). Dipanggil ulang oleh tombol navigasi
+        // halaman maupun setiap kali data/filter berubah.
+        function renderHotspotTablePage(filteredList) {
+            const total = filteredList.length;
+            const totalPages = total === 0 ? 1 : Math.ceil(total / TABLE_ROWS_PER_PAGE);
+            if (currentTablePage > totalPages) currentTablePage = totalPages;
+            if (currentTablePage < 1) currentTablePage = 1;
+
+            const startIdx = (currentTablePage - 1) * TABLE_ROWS_PER_PAGE;
+            const pageItems = filteredList.slice(startIdx, startIdx + TABLE_ROWS_PER_PAGE);
+
+            let html = '';
+            if (total === 0) {
+                html = `<tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Tidak ada titik panas yang ditemukan sesuai filter.</td></tr>`;
+            } else {
+                pageItems.forEach(h => { html += buildHotspotRowHtml(h); });
+            }
+            document.getElementById('hotspot-table-body').innerHTML = html;
+
+            const infoEl = document.getElementById('table-pagination-info');
+            if (total === 0) {
+                infoEl.textContent = 'Tidak ada data';
+            } else {
+                infoEl.textContent = `Menampilkan ${startIdx + 1}-${Math.min(startIdx + TABLE_ROWS_PER_PAGE, total)} dari ${total} titik panas`;
+            }
+            document.getElementById('table-pagination-page').textContent = `${currentTablePage} / ${totalPages}`;
+            document.getElementById('btn-table-prev-page').disabled = currentTablePage <= 1;
+            document.getElementById('btn-table-next-page').disabled = currentTablePage >= totalPages;
+        }
+
+        // ================================================================
+        // KARTU STATISTIK & GRAFIK TREN HOTSPOT HARIAN PER KECAMATAN
+        // ----------------------------------------------------------------
+        // Titik panas HANYA dikelompokkan jika field kecamatan-nya cocok
+        // persis dengan salah satu dari 13 kecamatan resmi Kabupaten
+        // Katingan (kunci KECAMATAN_COLORS). Titik yang kecamatannya kosong,
+        // tidak dikenali, atau berada di luar 13 kecamatan tersebut TIDAK
+        // dipaksakan masuk ke kecamatan manapun (tidak ada grup "Lainnya") —
+        // titik itu cukup dilewati saat membangun statistik ini.
+        // ================================================================
+        function renderDailyKecamatanStats(combinedData) {
+            const validKecamatanList = Object.keys(KECAMATAN_COLORS).sort();
+            const todayWIB = getTodayWIB();
+
+            // dailyTotals: { "YYYY-MM-DD": { "<kecamatan>": total } }
+            // todayVillages: { "<kecamatan>": { "<desa>": total } }
+            const dailyTotals = {};
+            const todayVillages = {};
+            validKecamatanList.forEach(kec => { todayVillages[kec] = {}; });
+
+            combinedData.forEach(item => {
+                const lat = parseFloat(item.latitude || item.lat || 0);
+                const lng = parseFloat(item.longitude || item.lng || 0);
+                if (lat === 0 || lng === 0) return;
+                if (!isPointInsideKatingan(lat, lng)) return;
+
+                const kec = item.kecamatan || "";
+                if (validKecamatanList.indexOf(kec) === -1) return; // di luar 13 kecamatan resmi -> lewati, jangan digrup
+
+                const rawTime = String(item.time || item.acq_time || "");
+                const dateStr = rawTime.slice(0, 10); // "YYYY-MM-DD"
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+
+                if (!dailyTotals[dateStr]) dailyTotals[dateStr] = {};
+                dailyTotals[dateStr][kec] = (dailyTotals[dateStr][kec] || 0) + 1;
+
+                if (dateStr === todayWIB) {
+                    const desa = item.village || "-";
+                    todayVillages[kec][desa] = (todayVillages[kec][desa] || 0) + 1;
+                }
+            });
+
+            renderKecamatanCards(validKecamatanList, todayVillages);
+            renderTrendChart(validKecamatanList, dailyTotals);
+        }
+
+        function renderKecamatanCards(validKecamatanList, todayVillages) {
+            const container = document.getElementById('kecamatan-daily-cards');
+            let html = '';
+
+            validKecamatanList.forEach(kec => {
+                const villageCounts = todayVillages[kec] || {};
+                const villageNames = Object.keys(villageCounts).sort((a, b) => villageCounts[b] - villageCounts[a]);
+                const total = villageNames.reduce((sum, v) => sum + villageCounts[v], 0);
+                const color = getKecamatanColor(kec);
+
+                let villageListHtml;
+                if (villageNames.length === 0) {
+                    villageListHtml = `<p class="text-xs text-slate-400 italic">Belum ada titik panas hari ini</p>`;
+                } else {
+                    villageListHtml = `<ul class="space-y-1 max-h-28 overflow-y-auto pr-1">` +
+                        villageNames.map(v => `
+                            <li class="flex items-center justify-between text-xs">
+                                <span class="text-slate-600 truncate dark:text-slate-300">${esc(v)}</span>
+                                <span class="font-bold text-slate-800 shrink-0 ml-2 dark:text-slate-100">${villageCounts[v]}</span>
+                            </li>
+                        `).join('') +
+                        `</ul>`;
+                }
+
+                html += `
+                    <div class="rounded-xl border border-slate-200/80 p-4 flex flex-col gap-2.5 dark:border-slate-700">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${color}"></span>
+                                ${esc(kec)}
+                            </span>
+                            <span class="text-lg font-black text-slate-800 dark:text-slate-100">${total}</span>
+                        </div>
+                        <div class="border-t border-dashed border-slate-100 pt-2 dark:border-slate-700">
+                            ${villageListHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html || `<div class="col-span-full py-6 text-center text-slate-400 italic text-sm">Tidak ada data kecamatan.</div>`;
+        }
+
+        function renderTrendChart(validKecamatanList, dailyTotals) {
+            const dates = Object.keys(dailyTotals).sort(); // ascending "YYYY-MM-DD"
+            const emptyMsgEl = document.getElementById('trend-chart-empty');
+            const canvasEl = document.getElementById('hotspot-trend-chart');
+
+            if (dates.length === 0) {
+                if (hotspotTrendChart) { hotspotTrendChart.destroy(); hotspotTrendChart = null; }
+                canvasEl.classList.add('hidden');
+                emptyMsgEl.classList.remove('hidden');
+                return;
+            }
+            canvasEl.classList.remove('hidden');
+            emptyMsgEl.classList.add('hidden');
+
+            const datasets = validKecamatanList.map(kec => ({
+                label: kec,
+                data: dates.map(d => (dailyTotals[d] && dailyTotals[d][kec]) || 0),
+                backgroundColor: getKecamatanColor(kec),
+                stack: 'hotspot'
+            }));
+
+            const chartConfig = {
+                type: 'bar',
+                data: { labels: dates, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { stacked: true, ticks: { font: { size: 10 } } },
+                        y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                        tooltip: { callbacks: { footer: (items) => {
+                            const sum = items.reduce((s, it) => s + it.parsed.y, 0);
+                            return `Total: ${sum}`;
+                        } } }
+                    }
+                }
+            };
+
+            if (hotspotTrendChart) {
+                hotspotTrendChart.data = chartConfig.data;
+                hotspotTrendChart.update();
+            } else {
+                hotspotTrendChart = new Chart(canvasEl.getContext('2d'), chartConfig);
+            }
+        }
+
+        // ================================================================
         // VALIDASI SPASIAL TITIK HOTSPOT TERHADAP BATAS KABUPATEN KATINGAN
         // ----------------------------------------------------------------
         // PENYEBAB BUG: sebelumnya titik panas dari spreadsheet langsung
@@ -587,6 +824,7 @@
             }
 
             let rawHotspotData = [];
+            let historyHotspotData = [];
             let lastSatelliteUpdate = null;
             try {
                 // isUpdate=true (tombol "Update Data Satelit") HARUS memicu penarikan
@@ -605,6 +843,12 @@
                 }
                 if (result && result.lastSatelliteUpdate) {
                     lastSatelliteUpdate = result.lastSatelliteUpdate;
+                }
+                // Riwayat 14 hari terakhir (lihat Code-4.gs) khusus untuk kartu
+                // statistik & grafik tren harian; kosong jika backend belum
+                // diperbarui untuk mengirim field "history".
+                if (result && Array.isArray(result.history)) {
+                    historyHotspotData = result.history;
                 }
 
                 if (isUpdate) {
@@ -687,14 +931,11 @@
 
             globalFilteredHotspots = filtered;
 
-            let tableRowsHtml = '';
             let highConfCount = 0;
             let maxFrpVal = 0;
             let affectedSet = new Set();
 
-            if (filtered.length === 0) {
-                tableRowsHtml = `<tr><td colspan="7" class="py-8 text-center text-slate-400 italic">Tidak ada titik panas yang ditemukan sesuai filter.</td></tr>`;
-            } else {
+            if (filtered.length > 0) {
                 filtered.forEach(h => {
                     affectedSet.add(h.village);
                     if (h.confidence >= 80) highConfCount++;
@@ -763,23 +1004,6 @@
                     );
 
                     hotspotGroup.addLayer(marker);
-
-                    tableRowsHtml += `
-                        <tr class="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800">
-                            <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">${esc(h.time)}</td>
-                            <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${esc(h.village)}</td>
-                            <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${esc(h.kecamatan)}</td>
-                            <td class="py-3 px-4 text-slate-700 font-semibold dark:text-slate-300">
-                                <span class="inline-flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full shrink-0" style="background:${getSatelliteColor(h.satellite)}"></span>${esc(h.satellite)}
-                                </span>
-                            </td>
-                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs font-bold ${h.confidence >= 80 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}">${h.confidence}%</span></td>
-                            <td class="py-3 px-4 font-bold text-slate-800 dark:text-slate-100">${h.frp} MW</td>
-                            <td class="py-3 px-4 text-slate-700 dark:text-slate-300">Lat ${h.lat}, Long ${h.lng}
-                            <br><a href="${routeUrl}" target="_blank" class="route-btn">Buka di Google Maps</a></br></td>
-                        </tr>
-                    `;
                 });
             }
 
@@ -787,7 +1011,15 @@
             document.getElementById('high-confidence').textContent = highConfCount;
             document.getElementById('affected-villages').textContent = affectedSet.size;
             document.getElementById('max-frp').innerHTML = maxFrpVal.toFixed(1) + ` <span class="text-sm font-bold">MW</span>`;
-            document.getElementById('hotspot-table-body').innerHTML = tableRowsHtml;
+
+            // Tabel ditampilkan bertahap 25 titik panas per halaman, supaya tabel
+            // tetap ringan walau jumlah titik panas hasil filter sangat banyak.
+            renderHotspotTablePage(filtered);
+
+            // Kartu statistik & grafik tren harian per kecamatan memakai data
+            // hari ini + riwayat arsip (independen dari filter kecamatan/desa/
+            // satelit di atas, supaya selalu menunjukkan gambaran menyeluruh).
+            renderDailyKecamatanStats(rawHotspotData.concat(historyHotspotData));
 
             updateTimeRangeButtons();
 
@@ -845,13 +1077,16 @@
         document.getElementById('btn-whatsapp-report').addEventListener('click', sendWhatsAppReport);
         document.getElementById('btn-update-satellite').addEventListener('click', () => fetchRealtimeData(true));
         document.getElementById('btn-refresh-data').addEventListener('click', () => fetchRealtimeData(false));
-        document.getElementById('rk-kecamatan').addEventListener('change', () => { refreshVillageOptions(); fetchRealtimeData(false); });
-        document.getElementById('rk-village').addEventListener('change', () => fetchRealtimeData(false));
-        document.getElementById('satellite-filter').addEventListener('change', () => fetchRealtimeData(false));
+        document.getElementById('rk-kecamatan').addEventListener('change', () => { currentTablePage = 1; refreshVillageOptions(); fetchRealtimeData(false); });
+        document.getElementById('rk-village').addEventListener('change', () => { currentTablePage = 1; fetchRealtimeData(false); });
+        document.getElementById('satellite-filter').addEventListener('change', () => { currentTablePage = 1; fetchRealtimeData(false); });
+        document.getElementById('btn-table-prev-page').addEventListener('click', () => { currentTablePage--; renderHotspotTablePage(globalFilteredHotspots); });
+        document.getElementById('btn-table-next-page').addEventListener('click', () => { currentTablePage++; renderHotspotTablePage(globalFilteredHotspots); });
         document.querySelectorAll('.time-range-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (currentTimeRange === btn.dataset.range) return;
                 currentTimeRange = btn.dataset.range;
+                currentTablePage = 1;
                 fetchRealtimeData(false);
             });
         });
