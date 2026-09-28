@@ -22,7 +22,7 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
     <!-- Chart.js untuk grafik tren hotspot harian -->
-    <script src="https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
 
     <style>
         :root { --gold: #c8952a; --gold-light: #f2c14e; }
@@ -737,6 +737,13 @@
             const emptyMsgEl = document.getElementById('trend-chart-empty');
             const canvasEl = document.getElementById('hotspot-trend-chart');
 
+            if (typeof Chart === 'undefined') {
+                canvasEl.classList.add('hidden');
+                emptyMsgEl.textContent = 'Library grafik (Chart.js) gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.';
+                emptyMsgEl.classList.remove('hidden');
+                return;
+            }
+
             if (dates.length === 0) {
                 if (hotspotTrendChart) { hotspotTrendChart.destroy(); hotspotTrendChart = null; }
                 canvasEl.classList.add('hidden');
@@ -1019,7 +1026,11 @@
             // Kartu statistik & grafik tren harian per kecamatan memakai data
             // hari ini + riwayat arsip (independen dari filter kecamatan/desa/
             // satelit di atas, supaya selalu menunjukkan gambaran menyeluruh).
-            renderDailyKecamatanStats(rawHotspotData.concat(historyHotspotData));
+            try {
+                renderDailyKecamatanStats(rawHotspotData.concat(historyHotspotData));
+            } catch (statsErr) {
+                console.error('Gagal merender statistik harian:', statsErr);
+            }
 
             updateTimeRangeButtons();
 
