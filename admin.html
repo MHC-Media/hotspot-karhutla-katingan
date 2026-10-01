@@ -183,6 +183,7 @@
                                 <th class="p-2">Username</th>
                                 <th>Nama</th>
                                 <th>Role</th>
+                                <th>Wilayah</th>
                                 <th>Aktif</th>
                                 <th></th>
                             </tr>
@@ -197,6 +198,14 @@
                             <option>operator</option>
                             <option>admin</option>
                         </select></div>
+                    <div id="u-w" class="space-y-2">
+                        <div><label class="lb">Wilayah tugas operator</label><select id="u-t" class="in">
+                                <option value="kecamatan">Per Kecamatan</option>
+                                <option value="desa">Per Desa/Kelurahan</option>
+                            </select></div>
+                        <div><label class="lb">Kecamatan</label><select id="u-k" class="in"></select></div>
+                        <div id="u-dw"><label class="lb">Desa/Kelurahan</label><select id="u-d" class="in"></select></div>
+                    </div>
                     <div><label class="lb">Password (kosongkan jika tidak diubah)</label><input id="u-p" type="password" class="in" autocomplete="new-password"></div>
                     <label class="text-sm"><input type="checkbox" id="u-a" checked> Aktif</label><button class="btn w-full"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan Pengguna</button>
                 </form>
@@ -474,7 +483,7 @@
         async function masuk() {
             $('login').classList.add('hidden');
             $('app').classList.remove('hidden');
-            $('who').textContent = `${ME.n} (${ME.r})`;
+            $('who').textContent = `${ME.n} (${ME.r==='admin'?'admin':'operator · '+(ME.t==='desa'?'Desa '+ME.d+', Kec. '+ME.k:'Kec. '+ME.k)})`;
             const T = [
                 ['ringkasan', 'Ringkasan', 'layout-dashboard'],
                 ['laporan', 'Laporan', 'clipboard-list'],
@@ -487,8 +496,8 @@
             $('tabs').onclick = e => e.target.dataset.t && show(e.target.dataset.t);
             const [w, h] = await Promise.all([fetch(API + '?action=wilayah').then(r => r.json()).catch(() => ({})), fetch(API).then(r => r.json()).catch(() => ({}))]);
             WIL = w.wilayah || {};
-            HS = (h.data || []).slice(0, 150);
-            const ko = Object.keys(WIL).sort().map(k => `<option>${esc(k)}</option>`).join('');
+            HS = (h.data || []).filter(x => inS(x.kecamatan, x.village)).slice(0, 150);
+            const ko = (ME.r === 'admin' ? Object.keys(WIL).sort() : [ME.k]).map(k => `<option>${esc(k)}</option>`).join('');
             $('f-kec').innerHTML = ko;
             $('fk').innerHTML = '<option value="">Semua kecamatan</option>' + ko;
             $('pk').innerHTML = '<option value="">Semua kecamatan</option>' + ko;
@@ -516,10 +525,11 @@
                 })
             } else show('ringkasan');
         }
+        const inS = (k, d) => ME.r === 'admin' || (ME.t === 'desa' ? k === ME.k && d === ME.d : ME.t === 'kecamatan' && k === ME.k);
 
         function isiDesa(v) {
             const k = $('f-kec').value;
-            $('f-desa').innerHTML = (WIL[k] || []).map(d => `<option>${esc(d)}</option>`).join('');
+            $('f-desa').innerHTML = (WIL[k] || []).filter(d => inS(k, d)).map(d => `<option>${esc(d)}</option>`).join('');
             if (v) $('f-desa').value = v
         }
         async function muat() {
@@ -531,7 +541,10 @@
             document.querySelectorAll('main>section').forEach(s => s.classList.toggle('hidden', s.id !== 't-' + t));
             document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t));
             if (t === 'buat') setTimeout(initMap, 50);
-            if (t === 'user') users();
+            if (t === 'user') {
+                uwil();
+                users()
+            }
             draw()
         }
 
@@ -668,6 +681,7 @@
             if (deteksi) {
                 const j = await fetch(`${API}?action=deteksi&lat=${lat}&lng=${lng}`).then(r => r.json()).catch(() => ({}));
                 if (j.hasil) {
+                    if (!inS(j.hasil.kecamatan, j.hasil.desa)) return alert('Titik berada di luar wilayah tugas Anda (' + j.hasil.desa + ', ' + j.hasil.kecamatan + ').');
                     $('f-kec').value = j.hasil.kecamatan;
                     isiDesa(j.hasil.desa)
                 } else alert('Titik berada di luar Kabupaten Katingan.')
@@ -675,6 +689,7 @@
         }
 
         function isiHotspot(x) {
+            if (!inS(x.kecamatan, x.village)) return alert('Hotspot ini berada di luar wilayah tugas Anda, laporan tidak dapat dibuat.');
             const m = /(\d{4}-\d{2}-\d{2})\D+(\d{2}:\d{2})/.exec(x.time || '');
             if (m) $('f-tgl').value = m[1] + 'T' + m[2];
             $('f-sumber').value = 'Satelit / Hotspot';
@@ -754,35 +769,104 @@
                 return (!a || d >= a) && (!b || d <= b) && (!k || x.Kecamatan === k) && (!s || x.Status === s)
             }).sort((p, q) => p.Tgl.localeCompare(q.Tgl));
             if (!l.length) return alert('Tidak ada laporan pada filter tersebut.');
-            const c = cnt(l, x => x.Status),
-                now = new Date().toLocaleString('id-ID', {
-                    timeZone: 'Asia/Jakarta'
-                });
-            const html = `<html><head><meta charset="utf-8"><title>Laporan Karhutla</title><style>@page{size:A4;margin:15mm}body{font:11px Arial;color:#111}h1{font-size:16px;text-align:center;margin:0}h2{font-size:13px;margin:14px 0 4px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:3px 5px;text-align:left;vertical-align:top}th{background:#e5e7eb}.pb{page-break-inside:avoid;margin-top:12px;border:1px solid #888;padding:8px}img{height:90px;margin:3px;border:1px solid #aaa}.ttd{margin-top:30px;float:right;text-align:center;width:200px}</style></head><body>
-  <h1>LAPORAN KEJADIAN KEBAKARAN HUTAN DAN LAHAN</h1><h1>KABUPATEN KATINGAN</h1><p style="text-align:center">Periode: ${esc(a||'awal')} s.d. ${esc(b||'sekarang')} · Wilayah: ${esc(k||'Seluruh kecamatan')} · Status: ${esc(s||'Semua')}</p>
-  <h2>Ringkasan</h2><table><tr><th>Total</th>${ST.map(x=>`<th>${x}</th>`).join('')}</tr><tr><td>${l.length}</td>${ST.map(x=>`<td>${c[x]||0}</td>`).join('')}</tr></table>
-  <h2>Rekap Laporan</h2><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Lokasi</th><th>Jenis</th><th>Luas (ha)</th><th>Status</th></tr>${l.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${esc(x.Luas||'-')}</td><td>${esc(x.Status)}</td></tr>`).join('')}</table>
-  <h2>Rincian</h2>${l.map(x=>`<div class="pb"><b>${esc(x.No)}</b> — ${esc(x.Status)}<br>${esc(x.Desa)}, ${esc(x.Kecamatan)} (${esc(x.Lat)}, ${esc(x.Lng)}) · ${esc(x.Jenis)} · ${esc(x.Kondisi)} · Sumber: ${esc(x.Sumber)} · Pelapor: ${esc(x.Pelapor)}<br>Keterangan: ${esc(x.Keterangan)||'-'}<br>Tindak lanjut: ${esc(x.TindakLanjut)||'-'}<br>Riwayat: ${x.riwayat.map(r=>esc(r.waktu)+' → '+esc(r.ke)).join('; ')}
-  ${$('pf').checked?'<div>'+x.Foto.map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
-  <div class="ttd">Katingan, ${esc(now.split(',')[0])}<br>Operator<br><br><br><b>${esc(ME.n)}</b></div></body></html>`;
+            const n = l.length,
+                c = cnt(l, x => x.Status),
+                luas = l.reduce((t, x) => t + (parseFloat(x.Luas) || 0), 0),
+                done = c[ST[5]] || 0,
+                perlu = (c[ST[0]] || 0) + (c[ST[1]] || 0),
+                P = v => Math.round(v * 100 / n);
+            const wil = ME.r === 'admin' ? (k || 'Seluruh Kabupaten Katingan') : (ME.t === 'desa' ? 'Desa/Kel. ' + ME.d + ', Kec. ' + ME.k : 'Kecamatan ' + ME.k);
+            const nowS = new Date().toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    dateStyle: 'long',
+                    timeStyle: 'short'
+                }),
+                fd = v => v ? new Date(v).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }) : '';
+            const bars = (o, col, m = 10) => {
+                const e = Object.entries(o).sort((p, q) => q[1] - p[1]).slice(0, m),
+                    mx = e[0] ? e[0][1] : 1;
+                return e.map(x => `<div class="br"><span>${esc(x[0])}</span><div class="tr"><i style="width:${x[1]*100/mx}%;background:${col}"></i></div><b>${x[1]}</b></div>`).join('')
+            };
+            const byD = cnt(l, x => x.Tgl.slice(0, 10)),
+                days = Object.keys(byD).sort().slice(-31),
+                mxd = Math.max(...days.map(d => byD[d]));
+            const css = `@page{size:A4;margin:12mm 12mm 16mm;@bottom-center{content:"Halaman " counter(page) " dari " counter(pages);font:9px Arial;color:#64748b}}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font:11px/1.45 "Segoe UI",Arial,sans-serif;color:#0f172a;margin:0}
+  .hd{background:linear-gradient(135deg,#065f46,#0d9488);color:#fff;border-radius:14px;padding:18px 20px;display:flex;gap:14px;align-items:center}
+  .lg{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px}
+  .hd h1{margin:0;font-size:17px;letter-spacing:.3px}.hd p{margin:2px 0 0;opacity:.85;font-size:10.5px}
+  .meta{display:flex;gap:8px;margin:10px 0}.meta div{flex:1;background:#f1f5f9;border-radius:10px;padding:7px 10px}.meta small{display:block;color:#64748b;font-size:8.5px;text-transform:uppercase;font-weight:700}
+  h2{font-size:12.5px;margin:16px 0 7px;padding-left:8px;border-left:4px solid #059669}
+  .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.kp div{border-radius:12px;padding:10px;border:1px solid #e2e8f0}.kp b{display:block;font-size:22px;line-height:1.1}.kp small{color:#64748b;font-size:9px;font-weight:700;text-transform:uppercase}
+  .st{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}.st div{text-align:center;border-radius:10px;padding:7px 3px;color:#fff}.st b{font-size:17px;display:block}.st small{font-size:7.5px;font-weight:700}
+  .stk{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#e2e8f0;margin-top:8px}.stk i{display:block}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.br{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:10px}.br span{width:34%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tr{flex:1;height:8px;background:#e2e8f0;border-radius:4px}.tr i{display:block;height:8px;border-radius:4px}
+  .tn{display:flex;align-items:flex-end;gap:3px;height:70px;border-bottom:1px solid #cbd5e1}.tn div{flex:1;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:flex-end}.tn i{display:block;background:linear-gradient(#10b981,#059669);border-radius:3px 3px 0 0}.tn small{font-size:6.5px;color:#64748b;margin-top:2px}
+  table{border-collapse:collapse;width:100%;font-size:9.5px}th{background:#065f46;color:#fff;text-align:left;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #e2e8f0;vertical-align:top}tr:nth-child(even) td{background:#f8fafc}
+  .cd{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:9px;page-break-inside:avoid}.cd .t{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}.bd{color:#fff;border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;font-size:9.5px}.kv small{display:block;color:#64748b;font-size:8px;text-transform:uppercase;font-weight:700}
+  .tl{margin:6px 0 0;padding-left:12px;border-left:2px solid #10b981;font-size:9px;color:#334155}.tl div{margin-bottom:2px}
+  .ph{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}.ph img{width:100%;height:105px;object-fit:cover;border-radius:8px}
+  .ttd{margin-top:22px;margin-left:auto;width:210px;text-align:center;page-break-inside:avoid}.ft{margin-top:14px;color:#94a3b8;font-size:8.5px;text-align:center}`;
+            const html = `<html><head><meta charset="utf-8"><title>Laporan Karhutla ${esc(wil)}</title><style>${css}</style></head><body>
+  <div class="hd"><div class="lg">HK</div><div><h1>LAPORAN KEJADIAN KEBAKARAN HUTAN DAN LAHAN</h1><p>Hotspot Terpadu Karhutla · Kabupaten Katingan</p></div></div>
+  <div class="meta"><div><small>Wilayah</small><b>${esc(wil)}</b></div><div><small>Periode</small><b>${esc(a?fd(a):'Awal')} – ${esc(b?fd(b):'Sekarang')}</b></div><div><small>Status</small><b>${esc(s||'Semua')}</b></div><div><small>Dicetak</small><b>${esc(nowS)}</b></div></div>
+  <h2>Ringkasan Statistik</h2>
+  <div class="kp"><div style="background:#ecfdf5"><small>Total laporan</small><b style="color:#047857">${n}</b></div><div style="background:#fffbeb"><small>Perkiraan luas (ha)</small><b style="color:#b45309">${luas.toFixed(2)}</b></div><div style="background:#eff6ff"><small>Tingkat selesai</small><b style="color:#1d4ed8">${P(done)}%</b></div><div style="background:#fef2f2"><small>Menunggu verifikasi</small><b style="color:#b91c1c">${perlu}</b></div></div>
+  <div class="st">${ST.map((x,i)=>`<div style="background:${WR[i]}"><b>${c[x]||0}</b><small>${x}</small></div>`).join('')}</div>
+  <div class="stk">${ST.map((x,i)=>c[x]?`<i style="width:${P(c[x])}%;background:${WR[i]}"></i>`:'').join('')}</div>
+  <div class="g2"><div><h2>Per Kecamatan</h2>${bars(cnt(l,x=>x.Kecamatan),'#10b981')}</div><div><h2>Per Desa/Kelurahan</h2>${bars(cnt(l,x=>x.Desa),'#f59e0b')}</div>
+  <div><h2>Jenis Kejadian</h2>${bars(cnt(l,x=>x.Jenis),'#3b82f6',6)}</div><div><h2>Kondisi Kejadian</h2>${bars(cnt(l,x=>x.Kondisi),'#8b5cf6',6)}</div></div>
+  <h2>Tren Laporan per Hari</h2><div class="tn">${days.map(d=>`<div><i style="height:${byD[d]*100/mxd}%" title="${byD[d]}"></i><small>${d.slice(8)}/${d.slice(5,7)}</small></div>`).join('')}</div>
+  <h2>Rekap Laporan</h2><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Lokasi</th><th>Jenis</th><th>Luas</th><th>Status</th></tr>${l.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${esc(x.Luas||'-')}</td><td>${esc(x.Status)}</td></tr>`).join('')}</table>
+  <h2 style="page-break-before:always">Rincian Laporan</h2>${l.map(x=>`<div class="cd"><div class="t"><b>${esc(x.No)}</b><span class="bd" style="background:${WR[ST.indexOf(x.Status)]||'#64748b'}">${esc(x.Status)}</span></div>
+   <div class="kv"><div><small>Tanggal kejadian</small>${esc(x.Tgl.replace('T',' '))}</div><div><small>Lokasi</small>${esc(x.Desa)}, ${esc(x.Kecamatan)}</div><div><small>Koordinat</small>${esc(x.Lat)}, ${esc(x.Lng)}</div><div><small>Jenis</small>${esc(x.Jenis)}</div><div><small>Luas / Kondisi</small>${esc(x.Luas||'-')} ha · ${esc(x.Kondisi)}</div><div><small>Sumber / Pelapor</small>${esc(x.Sumber)} · ${esc(x.Pelapor)}</div></div>
+   <p style="margin:6px 0 0"><b>Keterangan:</b> ${esc(x.Keterangan)||'-'}<br><b>Tindak lanjut:</b> ${esc(x.TindakLanjut)||'-'}</p>
+   <div class="tl">${x.riwayat.map(r=>`<div><b>${esc(r.ke)}</b> · ${esc(r.waktu)} · ${esc(r.oleh)}${r.catatan?' — '+esc(r.catatan):''}</div>`).join('')}</div>
+   ${$('pf').checked&&x.Foto.length?'<div class="ph">'+x.Foto.slice(0,6).map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
+  <div class="ttd">Katingan, ${esc(nowS.split(' pukul')[0].split(',')[0])}<br>Operator<br><br><br><br><b>${esc(ME.n)}</b></div><div class="ft">Dokumen dihasilkan otomatis oleh Sistem Hotspot Terpadu Karhutla Kabupaten Katingan</div></body></html>`;
             const w = window.open('', '_blank');
             if (!w) return alert('Izinkan pop-up untuk mencetak.');
             w.document.write(html);
             w.document.close();
-            setTimeout(() => w.print(), 1800)
+            setTimeout(() => w.print(), 2000)
         };
 
         // ---- pengguna & akun ----
         async function users() {
             const u = (await api('users')).data;
-            $('urows').innerHTML = u.map(x => `<tr class="border-t"><td class="p-2">${esc(x.Username)}</td><td>${esc(x.Nama)}</td><td>${esc(x.Role)}</td><td>${x.Aktif==='1'?'Ya':'Tidak'}</td><td class="whitespace-nowrap"><button class="btn g !py-1" onclick="euser('${esc(x.Username)}','${esc(x.Nama)}','${esc(x.Role)}',${x.Aktif==='1'})"><i data-lucide="pencil" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Ubah</button> <button class="btn r !py-1" onclick="duser('${esc(x.Username)}')"><i data-lucide="trash-2" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Hapus</button></td></tr>`).join('')
+            $('urows').innerHTML = u.map(x => {
+                const w = x.Role === 'admin' ? 'Semua' : (x.Tipe === 'desa' ? 'Desa ' + x.Desa + ', Kec. ' + x.Kec : 'Kec. ' + x.Kec);
+                return `<tr class="border-t"><td class="p-2">${esc(x.Username)}</td><td>${esc(x.Nama)}</td><td>${esc(x.Role)}</td><td>${esc(w)}</td><td>${x.Aktif==='1'?'Ya':'Tidak'}</td><td class="whitespace-nowrap"><button class="btn g !py-1" onclick="euser('${esc(x.Username)}','${esc(x.Nama)}','${esc(x.Role)}',${x.Aktif==='1'},'${esc(x.Tipe)}','${esc(x.Kec)}','${esc(x.Desa)}')"><i data-lucide="pencil" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Ubah</button> <button class="btn r !py-1" onclick="duser('${esc(x.Username)}')"><i data-lucide="trash-2" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Hapus</button></td></tr>`
+            }).join('')
         }
-        const euser = (a, b, c, d) => {
+
+        function uwil(d) {
+            const k = $('u-k');
+            if (!k.options.length) k.innerHTML = Object.keys(WIL).sort().map(x => `<option>${esc(x)}</option>`).join('');
+            $('u-d').innerHTML = (WIL[k.value] || []).map(x => `<option>${esc(x)}</option>`).join('');
+            if (d) $('u-d').value = d;
+            $('u-w').classList.toggle('hidden', $('u-r').value === 'admin');
+            $('u-dw').classList.toggle('hidden', $('u-t').value !== 'desa')
+        }
+        $('u-r').onchange = $('u-t').onchange = () => uwil();
+        $('u-k').onchange = () => uwil();
+        const euser = (a, b, c, d, t, k, ds) => {
             $('u-un').value = a;
             $('u-n').value = b;
             $('u-r').value = c;
             $('u-a').checked = d;
-            $('u-p').value = ''
+            $('u-p').value = '';
+            if (t) $('u-t').value = t;
+            uwil();
+            if (k) {
+                $('u-k').value = k;
+                uwil(ds)
+            }
         };
         const duser = un => wrap(async () => {
             if (confirm('Hapus pengguna ' + un + '?')) {
@@ -800,9 +884,13 @@
                     nama: $('u-n').value,
                     role: $('u-r').value,
                     aktif: $('u-a').checked,
-                    password: $('u-p').value
+                    password: $('u-p').value,
+                    tipe: $('u-t').value,
+                    kec: $('u-k').value,
+                    desa: $('u-d').value
                 });
                 $('fu').reset();
+                uwil();
                 users()
             })
         };
@@ -834,6 +922,19 @@
             })
         }
     </script>
+
+<!-- Footer -->
+<footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
+        <p class="text-xs text-slate-500 font-medium dark:text-slate-400">
+            Penata Kelola Sistem dan Teknologi Informasi
+        </p>
+        <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
+            MEMET HARIYADI CHRISTIAN, S.T - ©2026
+        </p>
+    </div>
+</footer>
+    
 </body>
 
 </html>
