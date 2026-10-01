@@ -1,143 +1,602 @@
 <!DOCTYPE html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin – Laporan Karhutla Kabupaten Katingan</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>.in{width:100%;border:1px solid #cbd5e1;border-radius:.75rem;padding:.55rem .75rem;font-size:.875rem;background:#fff}
-.btn{padding:.5rem 1rem;border-radius:.75rem;font-weight:700;font-size:.8rem;color:#fff;background:#059669;cursor:pointer}.btn:hover{opacity:.9}.btn.g{background:#475569}.btn.r{background:#dc2626}
-.lb{display:block;font-size:.7rem;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:.2rem}.card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1rem}
-.tab{padding:.75rem 1rem;white-space:nowrap;border-bottom:3px solid transparent}.tab.on{border-color:#059669;color:#047857}</style></head>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin – Laporan Karhutla Kabupaten Katingan</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .in {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: .75rem;
+            padding: .55rem .75rem;
+            font-size: .875rem;
+            background: #fff
+        }
+
+        .btn {
+            padding: .5rem 1rem;
+            border-radius: .75rem;
+            font-weight: 700;
+            font-size: .8rem;
+            color: #fff;
+            background: #059669;
+            cursor: pointer
+        }
+
+        .btn:hover {
+            opacity: .9
+        }
+
+        .btn.g {
+            background: #475569
+        }
+
+        .btn.r {
+            background: #dc2626
+        }
+
+        .lb {
+            display: block;
+            font-size: .7rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: .2rem
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1rem
+        }
+
+        .tab {
+            padding: .75rem 1rem;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent
+        }
+
+        .tab.on {
+            border-color: #059669;
+            color: #047857
+        }
+    </style>
+</head>
+
 <body class="bg-slate-50 text-slate-800">
 
-<div id="login" class="min-h-screen flex items-center justify-center p-4">
-  <form id="fl" class="card w-full max-w-sm space-y-3 shadow">
-    <div class="text-center"><div class="text-3xl">🔥</div><h1 class="font-extrabold text-lg">Login Admin</h1><p class="text-xs text-slate-500">Laporan Karhutla Kabupaten Katingan</p></div>
-    <div><label class="lb">Username</label><input id="lu" class="in" autocomplete="username" required></div>
-    <div><label class="lb">Password</label><input id="lp" type="password" class="in" autocomplete="current-password" required></div>
-    <p id="le" class="text-xs text-red-600 font-semibold"></p>
-    <button class="btn w-full py-2.5">Masuk</button>
-    <a href="index.html" class="block text-center text-xs text-slate-500">← Kembali ke dashboard</a>
-  </form>
-</div>
+    <div id="login" class="min-h-screen flex items-center justify-center p-4">
+        <form id="fl" class="card w-full max-w-sm space-y-3 shadow">
+            <div class="text-center">
+                <div class="text-3xl">🔥</div>
+                <h1 class="font-extrabold text-lg">Login Admin</h1>
+                <p class="text-xs text-slate-500">Laporan Karhutla Kabupaten Katingan</p>
+            </div>
+            <div><label class="lb">Username</label><input id="lu" class="in" autocomplete="username" required></div>
+            <div><label class="lb">Password</label><input id="lp" type="password" class="in" autocomplete="current-password" required></div>
+            <p id="le" class="text-xs text-red-600 font-semibold"></p>
+            <button class="btn w-full py-2.5">Masuk</button>
+            <a href="index.html" class="block text-center text-xs text-slate-500">← Kembali ke dashboard</a>
+        </form>
+    </div>
 
-<div id="app" class="hidden">
-  <header class="bg-emerald-800 text-white sticky top-0 z-40"><div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-    <b>Admin Karhutla Katingan</b>
-    <div class="flex items-center gap-3 text-xs"><span id="who"></span><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1">Keluar</button></div></div></header>
-  <nav id="tabs" class="bg-white border-b flex overflow-x-auto text-sm font-semibold sticky top-14 z-30"></nav>
-  <main class="max-w-6xl mx-auto p-4">
+    <div id="app" class="hidden">
+        <header class="bg-emerald-800 text-white sticky top-0 z-40">
+            <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+                <b>Admin Karhutla Katingan</b>
+                <div class="flex items-center gap-3 text-xs"><span id="who"></span><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1">Keluar</button></div>
+            </div>
+        </header>
+        <nav id="tabs" class="bg-white border-b flex overflow-x-auto text-sm font-semibold sticky top-14 z-30"></nav>
+        <main class="max-w-6xl mx-auto p-4">
 
-  <section id="t-ringkasan" class="space-y-4"><div id="cards" class="grid grid-cols-2 md:grid-cols-6 gap-3"></div>
-    <div class="grid md:grid-cols-2 gap-4"><div class="card"><b class="text-sm">Per Status</b><canvas id="c1" height="170"></canvas></div><div class="card"><b class="text-sm">Per Kecamatan</b><canvas id="c2" height="170"></canvas></div>
-    <div class="card"><b class="text-sm">Per Desa/Kelurahan (10 teratas)</b><canvas id="c3" height="170"></canvas></div><div class="card"><b class="text-sm">Per Tanggal Kejadian (30 hari)</b><canvas id="c4" height="170"></canvas></div></div></section>
+            <section id="t-ringkasan">
+                <div id="ad-stat"></div>
+            </section>
 
-  <section id="t-laporan" class="space-y-3 hidden">
-    <div class="card grid md:grid-cols-4 gap-2"><select id="fs" class="in"></select><select id="fk" class="in"></select><input id="fq" class="in md:col-span-2" placeholder="Cari no / desa / pelapor…"></div>
-    <div class="card overflow-x-auto"><table class="w-full text-xs"><thead class="text-left text-slate-500"><tr><th class="p-2">No</th><th>Tanggal</th><th>Lokasi</th><th>Jenis</th><th>Status</th><th></th></tr></thead><tbody id="rows"></tbody></table></div></section>
+            <section id="t-laporan" class="space-y-3 hidden">
+                <div class="card grid md:grid-cols-4 gap-2"><select id="fs" class="in"></select><select id="fk" class="in"></select><input id="fq" class="in md:col-span-2" placeholder="Cari no / desa / pelapor…"></div>
+                <div class="card overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="text-left text-slate-500">
+                            <tr>
+                                <th class="p-2">No</th>
+                                <th>Tanggal</th>
+                                <th>Lokasi</th>
+                                <th>Jenis</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rows"></tbody>
+                    </table>
+                </div>
+            </section>
 
-  <section id="t-buat" class="hidden"><form id="fb" class="card grid md:grid-cols-2 gap-3">
-    <input type="hidden" id="f-no"><input type="hidden" id="f-ref">
-    <div class="md:col-span-2"><label class="lb">Ambil dari hotspot terdeteksi (opsional)</label><select id="f-hs" class="in"></select></div>
-    <div><label class="lb">Tanggal & waktu kejadian *</label><input id="f-tgl" type="datetime-local" class="in" required></div>
-    <div><label class="lb">Sumber laporan *</label><select id="f-sumber" class="in"><option>Satelit / Hotspot</option><option>Patroli</option><option>Masyarakat</option><option>Media sosial</option><option>Instansi lain</option></select></div>
-    <div><label class="lb">Kecamatan *</label><select id="f-kec" class="in" required></select></div>
-    <div><label class="lb">Desa/Kelurahan *</label><select id="f-desa" class="in" required></select></div>
-    <div class="md:col-span-2"><label class="lb">Koordinat * (klik peta untuk memilih lokasi)</label><div id="map" class="h-64 rounded-xl border z-0"></div></div>
-    <div><label class="lb">Latitude *</label><input id="f-lat" class="in" required></div><div><label class="lb">Longitude *</label><input id="f-lng" class="in" required></div>
-    <div><label class="lb">Jenis kejadian *</label><select id="f-jenis" class="in"><option>Kebakaran lahan gambut</option><option>Kebakaran lahan mineral</option><option>Kebakaran hutan</option><option>Kebakaran kebun</option><option>Asap</option><option>Lainnya</option></select></div>
-    <div><label class="lb">Perkiraan luas (ha)</label><input id="f-luas" type="number" step="0.01" min="0" class="in"></div>
-    <div><label class="lb">Kondisi kejadian *</label><select id="f-kondisi" class="in"><option>Api aktif</option><option>Asap saja</option><option>Terkendali</option><option>Padam</option><option>Tidak ditemukan api</option></select></div>
-    <div><label class="lb">Nama pelapor/petugas *</label><input id="f-pelapor" class="in" required></div>
-    <div class="md:col-span-2"><label class="lb">Keterangan</label><textarea id="f-ket" rows="3" class="in"></textarea></div>
-    <div class="md:col-span-2"><label class="lb">Foto dokumentasi (maks. 6)</label><input id="f-foto" type="file" accept="image/*" multiple class="in"></div>
-    <div class="md:col-span-2 flex gap-2"><button class="btn" id="sv">Simpan Laporan</button><button type="button" class="btn g" id="rs">Reset</button></div></form></section>
+            <section id="t-buat" class="hidden">
+                <form id="fb" class="card grid md:grid-cols-2 gap-3">
+                    <input type="hidden" id="f-no"><input type="hidden" id="f-ref">
+                    <div class="md:col-span-2"><label class="lb">Ambil dari hotspot terdeteksi (opsional)</label><select id="f-hs" class="in"></select></div>
+                    <div><label class="lb">Tanggal & waktu kejadian *</label><input id="f-tgl" type="datetime-local" class="in" required></div>
+                    <div><label class="lb">Sumber laporan *</label><select id="f-sumber" class="in">
+                            <option>Satelit / Hotspot</option>
+                            <option>Patroli</option>
+                            <option>Masyarakat</option>
+                            <option>Media sosial</option>
+                            <option>Instansi lain</option>
+                        </select></div>
+                    <div><label class="lb">Kecamatan *</label><select id="f-kec" class="in" required></select></div>
+                    <div><label class="lb">Desa/Kelurahan *</label><select id="f-desa" class="in" required></select></div>
+                    <div class="md:col-span-2"><label class="lb">Koordinat * (klik peta untuk memilih lokasi)</label>
+                        <div id="map" class="h-64 rounded-xl border z-0"></div>
+                    </div>
+                    <div><label class="lb">Latitude *</label><input id="f-lat" class="in" required></div>
+                    <div><label class="lb">Longitude *</label><input id="f-lng" class="in" required></div>
+                    <div><label class="lb">Jenis kejadian *</label><select id="f-jenis" class="in">
+                            <option>Kebakaran lahan gambut</option>
+                            <option>Kebakaran lahan mineral</option>
+                            <option>Kebakaran hutan</option>
+                            <option>Kebakaran kebun</option>
+                            <option>Asap</option>
+                            <option>Lainnya</option>
+                        </select></div>
+                    <div><label class="lb">Perkiraan luas (ha)</label><input id="f-luas" type="number" step="0.01" min="0" class="in"></div>
+                    <div><label class="lb">Kondisi kejadian *</label><select id="f-kondisi" class="in">
+                            <option>Api aktif</option>
+                            <option>Asap saja</option>
+                            <option>Terkendali</option>
+                            <option>Padam</option>
+                            <option>Tidak ditemukan api</option>
+                        </select></div>
+                    <div><label class="lb">Nama pelapor/petugas *</label><input id="f-pelapor" class="in" required></div>
+                    <div class="md:col-span-2"><label class="lb">Keterangan</label><textarea id="f-ket" rows="3" class="in"></textarea></div>
+                    <div class="md:col-span-2"><label class="lb">Foto dokumentasi (maks. 6)</label><input id="f-foto" type="file" accept="image/*" multiple class="in"></div>
+                    <div class="md:col-span-2 flex gap-2"><button class="btn" id="sv">Simpan Laporan</button><button type="button" class="btn g" id="rs">Reset</button></div>
+                </form>
+            </section>
 
-  <section id="t-pdf" class="hidden"><div class="card grid md:grid-cols-4 gap-3">
-    <div><label class="lb">Dari tanggal</label><input id="p1" type="date" class="in"></div><div><label class="lb">Sampai tanggal</label><input id="p2" type="date" class="in"></div>
-    <div><label class="lb">Kecamatan</label><select id="pk" class="in"></select></div><div><label class="lb">Status</label><select id="ps" class="in"></select></div>
-    <label class="text-sm md:col-span-2"><input type="checkbox" id="pf" checked> Sertakan foto dokumentasi</label>
-    <div class="md:col-span-2"><button class="btn" id="pg">Buat Laporan PDF</button></div>
-    <p class="text-xs text-slate-500 md:col-span-4">Jendela cetak akan terbuka. Pilih <b>Simpan sebagai PDF</b> pada printer untuk menyimpan.</p></div></section>
+            <section id="t-pdf" class="hidden">
+                <div class="card grid md:grid-cols-4 gap-3">
+                    <div><label class="lb">Dari tanggal</label><input id="p1" type="date" class="in"></div>
+                    <div><label class="lb">Sampai tanggal</label><input id="p2" type="date" class="in"></div>
+                    <div><label class="lb">Kecamatan</label><select id="pk" class="in"></select></div>
+                    <div><label class="lb">Status</label><select id="ps" class="in"></select></div>
+                    <label class="text-sm md:col-span-2"><input type="checkbox" id="pf" checked> Sertakan foto dokumentasi</label>
+                    <div class="md:col-span-2"><button class="btn" id="pg">Buat Laporan PDF</button></div>
+                    <p class="text-xs text-slate-500 md:col-span-4">Jendela cetak akan terbuka. Pilih <b>Simpan sebagai PDF</b> pada printer untuk menyimpan.</p>
+                </div>
+            </section>
 
-  <section id="t-user" class="hidden grid md:grid-cols-3 gap-4"><div class="card md:col-span-2 overflow-x-auto"><table class="w-full text-xs"><thead class="text-left text-slate-500"><tr><th class="p-2">Username</th><th>Nama</th><th>Role</th><th>Aktif</th><th></th></tr></thead><tbody id="urows"></tbody></table></div>
-    <form id="fu" class="card space-y-2"><b class="text-sm">Tambah / Ubah Pengguna</b>
-      <div><label class="lb">Username</label><input id="u-un" class="in" required></div><div><label class="lb">Nama</label><input id="u-n" class="in" required></div>
-      <div><label class="lb">Role</label><select id="u-r" class="in"><option>operator</option><option>admin</option></select></div>
-      <div><label class="lb">Password (kosongkan jika tidak diubah)</label><input id="u-p" type="password" class="in" autocomplete="new-password"></div>
-      <label class="text-sm"><input type="checkbox" id="u-a" checked> Aktif</label><button class="btn w-full">Simpan Pengguna</button></form></section>
+            <section id="t-user" class="hidden grid md:grid-cols-3 gap-4">
+                <div class="card md:col-span-2 overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="text-left text-slate-500">
+                            <tr>
+                                <th class="p-2">Username</th>
+                                <th>Nama</th>
+                                <th>Role</th>
+                                <th>Aktif</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="urows"></tbody>
+                    </table>
+                </div>
+                <form id="fu" class="card space-y-2"><b class="text-sm">Tambah / Ubah Pengguna</b>
+                    <div><label class="lb">Username</label><input id="u-un" class="in" required></div>
+                    <div><label class="lb">Nama</label><input id="u-n" class="in" required></div>
+                    <div><label class="lb">Role</label><select id="u-r" class="in">
+                            <option>operator</option>
+                            <option>admin</option>
+                        </select></div>
+                    <div><label class="lb">Password (kosongkan jika tidak diubah)</label><input id="u-p" type="password" class="in" autocomplete="new-password"></div>
+                    <label class="text-sm"><input type="checkbox" id="u-a" checked> Aktif</label><button class="btn w-full">Simpan Pengguna</button>
+                </form>
+            </section>
 
-  <section id="t-akun" class="hidden"><form id="fa" class="card max-w-sm space-y-2"><b class="text-sm">Ganti Password</b>
-    <input id="a1" type="password" class="in" placeholder="Password lama" required><input id="a2" type="password" class="in" placeholder="Password baru (min. 8)" required><button class="btn">Simpan</button></form></section>
-  </main>
-</div>
+            <section id="t-akun" class="hidden">
+                <form id="fa" class="card max-w-sm space-y-2"><b class="text-sm">Ganti Password</b>
+                    <input id="a1" type="password" class="in" placeholder="Password lama" required><input id="a2" type="password" class="in" placeholder="Password baru (min. 8)" required><button class="btn">Simpan</button>
+                </form>
+            </section>
+        </main>
+    </div>
 
-<div id="modal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-auto p-4"><div id="mb" class="bg-white rounded-2xl max-w-2xl mx-auto p-5 space-y-3"></div></div>
+    <div id="modal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-auto p-4">
+        <div id="mb" class="bg-white rounded-2xl max-w-2xl mx-auto p-5 space-y-3"></div>
+    </div>
 
-<script>
-const API="https://script.google.com/macros/s/AKfycbzDy7KVJ14yuRZEsky3cXswC5PJxu7uT2PIfcy66pi26ImNKbtJt4o20FF1LYmGJtpY/exec";
-const ST=['LAPORAN MASUK','BELUM DIVERIFIKASI','DALAM VERIFIKASI','TERVERIFIKASI','DITINDAKLANJUTI','SELESAI'];
-const WR=['#64748b','#f59e0b','#3b82f6','#10b981','#8b5cf6','#059669'];
-let TOK=sessionStorage.getItem('kt_tok'),ME=null,LAP=[],HS=[],WIL={},map,mk,CH={};
-const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const badge=s=>`<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white whitespace-nowrap" style="background:${WR[ST.indexOf(s)]||'#64748b'}">${esc(s)}</span>`;
-const img=(id,w=600)=>`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${w}`;
-async function api(action,data={}){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({...data,action,token:TOK})});const j=await r.json();
-  if(j.status!=='success'){if(/Sesi/.test(j.message||'')&&action!=='login')keluar();throw new Error(j.message||'Gagal')}return j}
-const wrap=async(fn)=>{try{await fn()}catch(e){alert(e.message)}};
+    <script>
+        /* ===== Tampilan statistik laporan (dipakai dashboard & admin) ===== */
+        window.renderStat = function(p, all) {
+            const ST = ['LAPORAN MASUK', 'BELUM DIVERIFIKASI', 'DALAM VERIFIKASI', 'TERVERIFIKASI', 'DITINDAKLANJUTI', 'SELESAI'],
+                WR = ['#64748b', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#059669'],
+                IC = ['📥', '⏳', '🔍', '✅', '🚒', '🏁'];
+            const root = document.getElementById(p + '-stat');
+            if (!root) return;
+            (root._ch || []).forEach(c => c.destroy());
+            root._ch = [];
+            const R = root.dataset.r || '30',
+                dark = document.documentElement.classList.contains('dark'),
+                tc = dark ? '#cbd5e1' : '#475569',
+                gc = dark ? '#334155' : '#e5e7eb';
+            const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            } [c]));
+            const t0 = Date.now(),
+                l = all.filter(x => R === 'ALL' || (x.tgl && t0 - new Date(x.tgl) <= R * 864e5)),
+                n = l.length;
+            const cnt = f => {
+                const o = {};
+                l.forEach(x => {
+                    const k = f(x);
+                    if (k) o[k] = (o[k] || 0) + 1
+                });
+                return o
+            };
+            const c = cnt(x => x.status),
+                pc = v => n ? Math.round(v * 100 / n) : 0,
+                done = c[ST[5]] || 0,
+                perlu = (c[ST[0]] || 0) + (c[ST[1]] || 0);
+            const CARD = 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm';
+            const rank = (o, col) => {
+                const e = Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 10),
+                    m = e[0] ? e[0][1] : 1;
+                return e.length ? e.map((x, i) => `<div class="flex items-center gap-2 text-xs mb-2"><span class="w-4 text-slate-400 font-bold">${i+1}</span><div class="flex-1 min-w-0"><div class="flex justify-between mb-0.5 gap-2"><span class="font-semibold truncate">${E(x[0])}</span><b>${x[1]}</b></div><div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800"><div class="h-2 rounded-full" style="width:${x[1]*100/m}%;background:${col}"></div></div></div></div>`).join('') : '<p class="text-xs text-slate-400">Belum ada data.</p>'
+            };
+            const chips = [
+                ['7', '7 hari'],
+                ['30', '30 hari'],
+                ['ALL', 'Semua']
+            ].map(a => `<button data-r="${a[0]}" class="px-3 py-1 rounded-full text-xs font-bold ${a[0]===R?'bg-emerald-600 text-white':'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}">${a[1]}</button>`).join('');
+            root.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2"><div class="text-xs text-slate-500">Menurut tanggal kejadian</div><div class="flex gap-1.5">${chips}</div></div>
+ <div class="grid md:grid-cols-3 gap-3 mt-3">
+  <div class="rounded-2xl p-4 text-white shadow-sm" style="background:linear-gradient(135deg,#047857,#14b8a6)"><div class="text-xs font-semibold opacity-80">Total Laporan</div><div class="text-4xl font-black mt-1">${n}</div><div class="text-xs opacity-80 mt-1">${(c[ST[4]]||0)} sedang ditindaklanjuti</div></div>
+  <div class="${CARD}"><div class="flex justify-between text-xs font-semibold text-slate-500"><span>Tingkat Penyelesaian</span><b class="text-emerald-600 text-base">${pc(done)}%</b></div><div class="h-3 rounded-full bg-slate-100 dark:bg-slate-800 mt-3 overflow-hidden"><div class="h-3 rounded-full" style="width:${pc(done)}%;background:linear-gradient(90deg,#10b981,#059669)"></div></div><div class="text-xs text-slate-500 mt-2">${done} dari ${n} laporan selesai</div></div>
+  <div class="${CARD}" style="border-left:5px solid #f59e0b"><div class="text-xs font-semibold text-slate-500">Menunggu Verifikasi</div><div class="text-4xl font-black text-amber-500 mt-1">${perlu}</div><div class="text-xs text-slate-500 mt-1">laporan masuk &amp; belum diverifikasi</div></div></div>
+ <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mt-3">${ST.map((s,i)=>`<div class="${CARD} !p-3 text-center" style="border-top:4px solid ${WR[i]}"><div class="text-xl">${IC[i]}</div><div class="text-2xl font-black">${c[s]||0}</div><div class="text-[10px] font-bold text-slate-500 leading-tight">${s}</div><div class="text-[10px] mt-0.5" style="color:${WR[i]}">${pc(c[s]||0)}%</div></div>`).join('')}</div>
+ <div class="${CARD} mt-3"><div class="text-sm font-bold mb-2">Alur Penanganan</div><div class="flex h-7 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">${ST.map((s,i)=>c[s]?`<div title="${s}: ${c[s]}" class="flex items-center justify-center text-[11px] font-bold text-white" style="width:${pc(c[s])}%;background:${WR[i]}">${pc(c[s])>=8?c[s]:''}</div>`:'').join('')}</div></div>
+ <div class="grid md:grid-cols-2 gap-3 mt-3">
+  <div class="${CARD}"><div class="text-sm font-bold mb-2">Komposisi Status</div><div style="height:230px"><canvas id="${p}-d"></canvas></div></div>
+  <div class="${CARD}"><div class="text-sm font-bold mb-2">Tren Laporan per Hari</div><div style="height:230px"><canvas id="${p}-t"></canvas></div></div>
+  <div class="${CARD}"><div class="text-sm font-bold mb-3">Kecamatan Terbanyak</div>${rank(cnt(x=>x.kec),'linear-gradient(90deg,#10b981,#14b8a6)')}</div>
+  <div class="${CARD}"><div class="text-sm font-bold mb-3">Desa/Kelurahan Terbanyak</div>${rank(cnt(x=>x.desa),'linear-gradient(90deg,#f59e0b,#f97316)')}</div></div>`;
+            root.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
+                root.dataset.r = b.dataset.r;
+                renderStat(p, all)
+            });
+            if (typeof Chart === 'undefined') return;
+            root._ch.push(new Chart(document.getElementById(p + '-d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ST,
+                    datasets: [{
+                        data: ST.map(s => c[s] || 0),
+                        backgroundColor: WR,
+                        borderWidth: 2,
+                        borderColor: dark ? '#0f172a' : '#fff'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: tc,
+                                boxWidth: 10,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'ct',
+                    afterDraw(ch) {
+                        const a = ch.chartArea,
+                            x = ch.ctx,
+                            cx = (a.left + a.right) / 2,
+                            cy = (a.top + a.bottom) / 2;
+                        x.save();
+                        x.textAlign = 'center';
+                        x.fillStyle = tc;
+                        x.font = '800 28px sans-serif';
+                        x.fillText(n, cx, cy + 6);
+                        x.font = '11px sans-serif';
+                        x.fillText('laporan', cx, cy + 22);
+                        x.restore()
+                    }
+                }]
+            }));
+            const pad = v => String(v).padStart(2, '0'),
+                key = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()),
+                byD = cnt(x => (x.tgl || '').slice(0, 10));
+            let keys;
+            if (R === 'ALL') keys = Object.keys(byD).sort();
+            else {
+                keys = [];
+                for (let i = R - 1; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    keys.push(key(d))
+                }
+            }
+            root._ch.push(new Chart(document.getElementById(p + '-t'), {
+                type: 'line',
+                data: {
+                    labels: keys.map(k => k.slice(8) + '/' + k.slice(5, 7)),
+                    datasets: [{
+                        label: 'Laporan',
+                        data: keys.map(k => byD[k] || 0),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,.18)',
+                        fill: true,
+                        tension: .35,
+                        pointRadius: keys.length > 15 ? 0 : 3,
+                        borderWidth: 2.5
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: tc,
+                                maxTicksLimit: 8,
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: tc,
+                                precision: 0
+                            },
+                            grid: {
+                                color: gc
+                            }
+                        }
+                    }
+                }
+            }));
+        };
+    </script>
+    <script>
+        const API = "https://script.google.com/macros/s/AKfycbzDy7KVJ14yuRZEsky3cXswC5PJxu7uT2PIfcy66pi26ImNKbtJt4o20FF1LYmGJtpY/exec";
+        const ST = ['LAPORAN MASUK', 'BELUM DIVERIFIKASI', 'DALAM VERIFIKASI', 'TERVERIFIKASI', 'DITINDAKLANJUTI', 'SELESAI'];
+        const WR = ['#64748b', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#059669'];
+        let TOK = sessionStorage.getItem('kt_tok'),
+            ME = null,
+            LAP = [],
+            HS = [],
+            WIL = {},
+            map, mk, CH = {};
+        const $ = id => document.getElementById(id),
+            esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            } [c]));
+        const badge = s => `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white whitespace-nowrap" style="background:${WR[ST.indexOf(s)]||'#64748b'}">${esc(s)}</span>`;
+        const img = (id, w = 600) => `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${w}`;
+        async function api(action, data = {}) {
+            const r = await fetch(API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: JSON.stringify({
+                    ...data,
+                    action,
+                    token: TOK
+                })
+            });
+            const j = await r.json();
+            if (j.status !== 'success') {
+                if (/Sesi/.test(j.message || '') && action !== 'login') keluar();
+                throw new Error(j.message || 'Gagal')
+            }
+            return j
+        }
+        const wrap = async (fn) => {
+            try {
+                await fn()
+            } catch (e) {
+                alert(e.message)
+            }
+        };
 
-// ---- login ----
-if(location.search.includes('buat=')){sessionStorage.setItem('kt_pre',location.search);history.replaceState(null,'',location.pathname)}
-$('fl').onsubmit=async e=>{e.preventDefault();$('le').textContent='';try{const j=await api('login',{username:$('lu').value,password:$('lp').value});TOK=j.token;sessionStorage.setItem('kt_tok',TOK);ME=j.user;masuk()}catch(x){$('le').textContent=x.message}};
-function keluar(){if(TOK)api('logout').catch(()=>{});TOK=null;sessionStorage.removeItem('kt_tok');$('app').classList.add('hidden');$('login').classList.remove('hidden')}
-$('out').onclick=keluar;
-(async()=>{if(TOK)try{ME=(await api('me')).user;masuk()}catch(e){}})();
+        // ---- login ----
+        if (location.search.includes('buat=')) {
+            sessionStorage.setItem('kt_pre', location.search);
+            history.replaceState(null, '', location.pathname)
+        }
+        $('fl').onsubmit = async e => {
+            e.preventDefault();
+            $('le').textContent = '';
+            try {
+                const j = await api('login', {
+                    username: $('lu').value,
+                    password: $('lp').value
+                });
+                TOK = j.token;
+                sessionStorage.setItem('kt_tok', TOK);
+                ME = j.user;
+                masuk()
+            } catch (x) {
+                $('le').textContent = x.message
+            }
+        };
 
-async function masuk(){
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('who').textContent=`${ME.n} (${ME.r})`;
-  const T=[['ringkasan','Ringkasan'],['laporan','Laporan'],['buat','+ Buat Laporan'],['pdf','Laporan PDF'],...(ME.r==='admin'?[['user','Pengguna']]:[]),['akun','Akun']];
-  $('tabs').innerHTML=T.map(t=>`<button class="tab" data-t="${t[0]}">${t[1]}</button>`).join('');
-  $('tabs').onclick=e=>e.target.dataset.t&&show(e.target.dataset.t);
-  const [w,h]=await Promise.all([fetch(API+'?action=wilayah').then(r=>r.json()).catch(()=>({})),fetch(API).then(r=>r.json()).catch(()=>({}))]);
-  WIL=w.wilayah||{};HS=(h.data||[]).slice(0,150);
-  const ko=Object.keys(WIL).sort().map(k=>`<option>${esc(k)}</option>`).join('');
-  $('f-kec').innerHTML=ko;$('fk').innerHTML='<option value="">Semua kecamatan</option>'+ko;$('pk').innerHTML='<option value="">Semua kecamatan</option>'+ko;
-  $('fs').innerHTML='<option value="">Semua status</option>'+ST.map(s=>`<option>${s}</option>`).join('');$('ps').innerHTML=$('fs').innerHTML;
-  $('f-kec').onchange=()=>isiDesa();isiDesa();
-  $('f-hs').innerHTML='<option value="">— pilih hotspot —</option>'+HS.map((x,i)=>`<option value="${i}">${esc(x.village)} · ${esc(x.time)} · ${x.confidence}%</option>`).join('');
-  $('f-hs').onchange=()=>{const x=HS[$('f-hs').value];if(x)isiHotspot(x)};
-  await muat();
-  const pre=sessionStorage.getItem('kt_pre');
-  if(pre){sessionStorage.removeItem('kt_pre');const p=new URLSearchParams(pre);show('buat');
-    isiHotspot({latitude:+p.get('lat'),longitude:+p.get('lng'),village:p.get('desa'),kecamatan:p.get('kec'),time:p.get('time')||''})}
-  else show('ringkasan');
-}
-function isiDesa(v){const k=$('f-kec').value;$('f-desa').innerHTML=(WIL[k]||[]).map(d=>`<option>${esc(d)}</option>`).join('');if(v)$('f-desa').value=v}
-async function muat(){LAP=(await api('list')).data;draw()}
-function show(t){document.querySelectorAll('main>section').forEach(s=>s.classList.toggle('hidden',s.id!=='t-'+t));
-  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  if(t==='buat')setTimeout(initMap,50);if(t==='user')users();draw()}
-function draw(){ringkasan();tabel()}
+        function keluar() {
+            if (TOK) api('logout').catch(() => {});
+            TOK = null;
+            sessionStorage.removeItem('kt_tok');
+            $('app').classList.add('hidden');
+            $('login').classList.remove('hidden')
+        }
+        $('out').onclick = keluar;
+        (async () => {
+            if (TOK) try {
+                ME = (await api('me')).user;
+                masuk()
+            } catch (e) {}
+        })();
 
-// ---- ringkasan ----
-const cnt=(l,f)=>{const o={};l.forEach(x=>{const k=f(x);o[k]=(o[k]||0)+1});return o};
-function chart(id,type,labels,data,col,opt={}){CH[id]&&CH[id].destroy();CH[id]=new Chart($(id),{type,data:{labels,datasets:[{data,backgroundColor:col,borderColor:col,label:'Jumlah'}]},options:{plugins:{legend:{display:type==='doughnut'}},...opt}})}
-function ringkasan(){const c=cnt(LAP,x=>x.Status);
-  $('cards').innerHTML=`<div class="card"><div class="text-[10px] font-bold text-slate-500">TOTAL</div><div class="text-2xl font-black">${LAP.length}</div></div>`+ST.map((s,i)=>`<div class="card" style="border-top:4px solid ${WR[i]}"><div class="text-[10px] font-bold text-slate-500">${s}</div><div class="text-2xl font-black">${c[s]||0}</div></div>`).join('').replace(/^/,'');
-  chart('c1','doughnut',ST,ST.map(s=>c[s]||0),WR);
-  const k=cnt(LAP,x=>x.Kecamatan);chart('c2','bar',Object.keys(k),Object.values(k),'#059669');
-  const d=Object.entries(cnt(LAP,x=>x.Desa)).sort((a,b)=>b[1]-a[1]).slice(0,10);chart('c3','bar',d.map(x=>x[0]),d.map(x=>x[1]),'#f59e0b',{indexAxis:'y'});
-  const t=Object.entries(cnt(LAP.filter(x=>x.Tgl),x=>x.Tgl.slice(0,10))).sort().slice(-30);chart('c4','line',t.map(x=>x[0]),t.map(x=>x[1]),'#3b82f6')}
+        async function masuk() {
+            $('login').classList.add('hidden');
+            $('app').classList.remove('hidden');
+            $('who').textContent = `${ME.n} (${ME.r})`;
+            const T = [
+                ['ringkasan', 'Ringkasan'],
+                ['laporan', 'Laporan'],
+                ['buat', '+ Buat Laporan'],
+                ['pdf', 'Laporan PDF'], ...(ME.r === 'admin' ? [
+                    ['user', 'Pengguna']
+                ] : []), ['akun', 'Akun']
+            ];
+            $('tabs').innerHTML = T.map(t => `<button class="tab" data-t="${t[0]}">${t[1]}</button>`).join('');
+            $('tabs').onclick = e => e.target.dataset.t && show(e.target.dataset.t);
+            const [w, h] = await Promise.all([fetch(API + '?action=wilayah').then(r => r.json()).catch(() => ({})), fetch(API).then(r => r.json()).catch(() => ({}))]);
+            WIL = w.wilayah || {};
+            HS = (h.data || []).slice(0, 150);
+            const ko = Object.keys(WIL).sort().map(k => `<option>${esc(k)}</option>`).join('');
+            $('f-kec').innerHTML = ko;
+            $('fk').innerHTML = '<option value="">Semua kecamatan</option>' + ko;
+            $('pk').innerHTML = '<option value="">Semua kecamatan</option>' + ko;
+            $('fs').innerHTML = '<option value="">Semua status</option>' + ST.map(s => `<option>${s}</option>`).join('');
+            $('ps').innerHTML = $('fs').innerHTML;
+            $('f-kec').onchange = () => isiDesa();
+            isiDesa();
+            $('f-hs').innerHTML = '<option value="">— pilih hotspot —</option>' + HS.map((x, i) => `<option value="${i}">${esc(x.village)} · ${esc(x.time)} · ${x.confidence}%</option>`).join('');
+            $('f-hs').onchange = () => {
+                const x = HS[$('f-hs').value];
+                if (x) isiHotspot(x)
+            };
+            await muat();
+            const pre = sessionStorage.getItem('kt_pre');
+            if (pre) {
+                sessionStorage.removeItem('kt_pre');
+                const p = new URLSearchParams(pre);
+                show('buat');
+                isiHotspot({
+                    latitude: +p.get('lat'),
+                    longitude: +p.get('lng'),
+                    village: p.get('desa'),
+                    kecamatan: p.get('kec'),
+                    time: p.get('time') || ''
+                })
+            } else show('ringkasan');
+        }
 
-// ---- daftar & detail ----
-['fs','fk','fq'].forEach(i=>$(i).oninput=tabel);
-function tabel(){const s=$('fs').value,k=$('fk').value,q=$('fq').value.toLowerCase();
-  const l=LAP.filter(x=>(!s||x.Status===s)&&(!k||x.Kecamatan===k)&&(!q||(x.No+x.Desa+x.Pelapor).toLowerCase().includes(q)));
-  $('rows').innerHTML=l.map(x=>`<tr class="border-t"><td class="p-2 font-mono">${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${badge(x.Status)}</td><td><button class="btn !py-1" onclick="detail('${esc(x.No)}')">Detail</button></td></tr>`).join('')||'<tr><td class="p-3 text-slate-400">Belum ada laporan.</td></tr>'}
-function detail(no){const x=LAP.find(r=>r.No===no),i=ST.indexOf(x.Status);
-  const opts=(ME.r==='admin'?ST.filter(s=>s!==x.Status):ST.slice(i+1,i+2));
-  $('mb').innerHTML=`<div class="flex justify-between"><div><div class="font-mono font-bold">${esc(x.No)}</div>${badge(x.Status)}</div><button class="btn g" onclick="$('modal').classList.add('hidden')">Tutup</button></div>
+        function isiDesa(v) {
+            const k = $('f-kec').value;
+            $('f-desa').innerHTML = (WIL[k] || []).map(d => `<option>${esc(d)}</option>`).join('');
+            if (v) $('f-desa').value = v
+        }
+        async function muat() {
+            LAP = (await api('list')).data;
+            draw()
+        }
+
+        function show(t) {
+            document.querySelectorAll('main>section').forEach(s => s.classList.toggle('hidden', s.id !== 't-' + t));
+            document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+            if (t === 'buat') setTimeout(initMap, 50);
+            if (t === 'user') users();
+            draw()
+        }
+
+        function draw() {
+            ringkasan();
+            tabel()
+        }
+
+        // ---- ringkasan ----
+        const cnt = (l, f) => {
+            const o = {};
+            l.forEach(x => {
+                const k = f(x);
+                o[k] = (o[k] || 0) + 1
+            });
+            return o
+        };
+
+        function chart(id, type, labels, data, col, opt = {}) {
+            CH[id] && CH[id].destroy();
+            CH[id] = new Chart($(id), {
+                type,
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: col,
+                        borderColor: col,
+                        label: 'Jumlah'
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            display: type === 'doughnut'
+                        }
+                    },
+                    ...opt
+                }
+            })
+        }
+
+        function ringkasan() {
+            renderStat('ad', LAP.map(x => ({
+                status: x.Status,
+                kec: x.Kecamatan,
+                desa: x.Desa,
+                tgl: x.Tgl
+            })))
+        }
+
+        // ---- daftar & detail ----
+        ['fs', 'fk', 'fq'].forEach(i => $(i).oninput = tabel);
+
+        function tabel() {
+            const s = $('fs').value,
+                k = $('fk').value,
+                q = $('fq').value.toLowerCase();
+            const l = LAP.filter(x => (!s || x.Status === s) && (!k || x.Kecamatan === k) && (!q || (x.No + x.Desa + x.Pelapor).toLowerCase().includes(q)));
+            $('rows').innerHTML = l.map(x => `<tr class="border-t"><td class="p-2 font-mono">${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${badge(x.Status)}</td><td><button class="btn !py-1" onclick="detail('${esc(x.No)}')">Detail</button></td></tr>`).join('') || '<tr><td class="p-3 text-slate-400">Belum ada laporan.</td></tr>'
+        }
+
+        function detail(no) {
+            const x = LAP.find(r => r.No === no),
+                i = ST.indexOf(x.Status);
+            const opts = (ME.r === 'admin' ? ST.filter(s => s !== x.Status) : ST.slice(i + 1, i + 2));
+            $('mb').innerHTML = `<div class="flex justify-between"><div><div class="font-mono font-bold">${esc(x.No)}</div>${badge(x.Status)}</div><button class="btn g" onclick="$('modal').classList.add('hidden')">Tutup</button></div>
   <div class="grid grid-cols-2 gap-2 text-xs">${[['Tanggal kejadian',x.Tgl.replace('T',' ')],['Sumber',x.Sumber],['Lokasi',x.Desa+', '+x.Kecamatan],['Koordinat',x.Lat+', '+x.Lng],['Jenis',x.Jenis],['Perkiraan luas',(x.Luas||'-')+' ha'],['Kondisi',x.Kondisi],['Pelapor',x.Pelapor],['Dibuat',x.Dibuat+' oleh '+x.DibuatOleh]].map(a=>`<div><div class="lb">${a[0]}</div>${esc(a[1])}</div>`).join('')}</div>
   <p class="text-xs"><span class="lb">Keterangan</span>${esc(x.Keterangan)||'-'}</p>${x.TindakLanjut?`<p class="text-xs"><span class="lb">Tindak lanjut</span>${esc(x.TindakLanjut)}</p>`:''}
   <div class="flex flex-wrap gap-2">${x.Foto.map(f=>`<a target="_blank" href="${img(f,1600)}"><img src="${img(f,300)}" class="h-24 rounded-lg border"></a>`).join('')}</div>
@@ -147,49 +606,216 @@ function detail(no){const x=LAP.find(r=>r.No===no),i=ST.indexOf(x.Status);
   <textarea id="nc" rows="2" class="in" placeholder="Catatan / keterangan tindak lanjut (wajib untuk DITINDAKLANJUTI & SELESAI)"></textarea><input id="nf" type="file" accept="image/*" multiple class="in">
   <button class="btn" onclick="ubahStatus('${esc(x.No)}')">Simpan Status</button></div>`:''}
   <div class="flex gap-2"><button class="btn g" onclick="edit('${esc(x.No)}')">Edit data</button>${ME.r==='admin'?`<button class="btn r" onclick="hapus('${esc(x.No)}')">Hapus</button>`:''}</div>`;
-  $('modal').classList.remove('hidden')}
-const kompres=f=>new Promise(res=>{const im=new Image,u=URL.createObjectURL(f);im.onload=()=>{const s=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({data:c.toDataURL('image/jpeg',.72)})};im.src=u});
-const fotos=async el=>Promise.all([...el.files].slice(0,6).map(kompres));
-const ubahStatus=no=>wrap(async()=>{await api('status',{no,status:$('ns').value,catatan:$('nc').value,fotoBase64:await fotos($('nf'))});$('modal').classList.add('hidden');await muat()});
-const hapus=no=>wrap(async()=>{if(!confirm('Hapus laporan '+no+'? Tidak dapat dibatalkan.'))return;await api('hapus',{no});$('modal').classList.add('hidden');await muat()});
+            $('modal').classList.remove('hidden')
+        }
+        const kompres = f => new Promise(res => {
+            const im = new Image,
+                u = URL.createObjectURL(f);
+            im.onload = () => {
+                const s = Math.min(1, 1280 / Math.max(im.width, im.height)),
+                    c = document.createElement('canvas');
+                c.width = im.width * s;
+                c.height = im.height * s;
+                c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                URL.revokeObjectURL(u);
+                res({
+                    data: c.toDataURL('image/jpeg', .72)
+                })
+            };
+            im.src = u
+        });
+        const fotos = async el => Promise.all([...el.files].slice(0, 6).map(kompres));
+        const ubahStatus = no => wrap(async () => {
+            await api('status', {
+                no,
+                status: $('ns').value,
+                catatan: $('nc').value,
+                fotoBase64: await fotos($('nf'))
+            });
+            $('modal').classList.add('hidden');
+            await muat()
+        });
+        const hapus = no => wrap(async () => {
+            if (!confirm('Hapus laporan ' + no + '? Tidak dapat dibatalkan.')) return;
+            await api('hapus', {
+                no
+            });
+            $('modal').classList.add('hidden');
+            await muat()
+        });
 
-// ---- form laporan ----
-function initMap(){if(!map){map=L.map('map').setView([-1.9,113.2],8);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-  map.on('click',e=>pilih(e.latlng.lat,e.latlng.lng,true))}map.invalidateSize()}
-async function pilih(lat,lng,deteksi){$('f-lat').value=(+lat).toFixed(6);$('f-lng').value=(+lng).toFixed(6);
-  if(map){mk&&map.removeLayer(mk);mk=L.marker([lat,lng]).addTo(map);map.setView([lat,lng],12)}
-  if(deteksi){const j=await fetch(`${API}?action=deteksi&lat=${lat}&lng=${lng}`).then(r=>r.json()).catch(()=>({}));
-    if(j.hasil){$('f-kec').value=j.hasil.kecamatan;isiDesa(j.hasil.desa)}else alert('Titik berada di luar Kabupaten Katingan.')}}
-function isiHotspot(x){const m=/(\d{4}-\d{2}-\d{2})\D+(\d{2}:\d{2})/.exec(x.time||'');
-  if(m)$('f-tgl').value=m[1]+'T'+m[2];$('f-sumber').value='Satelit / Hotspot';$('f-ref').value=(x.time||'')+'|'+x.latitude+'|'+x.longitude;
-  if(WIL[x.kecamatan]){$('f-kec').value=x.kecamatan;isiDesa(x.village)}setTimeout(()=>pilih(x.latitude,x.longitude,false),100)}
-$('rs').onclick=()=>{$('fb').reset();$('f-no').value='';$('f-ref').value='';isiDesa()};
-$('fb').onsubmit=e=>{e.preventDefault();wrap(async()=>{$('sv').disabled=true;try{
-  const g=i=>$('f-'+i).value;
-  const r=await api('save',{data:{no:g('no'),ref:g('ref'),tgl:g('tgl'),sumber:g('sumber'),kecamatan:g('kec'),desa:g('desa'),lat:g('lat'),lng:g('lng'),jenis:g('jenis'),luas:g('luas'),kondisi:g('kondisi'),pelapor:g('pelapor'),keterangan:g('ket'),fotoBase64:await fotos($('f-foto'))}});
-  alert('Laporan tersimpan: '+r.no);$('rs').click();await muat();show('laporan')}finally{$('sv').disabled=false}})};
-function edit(no){const x=LAP.find(r=>r.No===no);$('modal').classList.add('hidden');show('buat');
-  $('f-no').value=x.No;$('f-ref').value=x.Ref;$('f-tgl').value=x.Tgl;$('f-sumber').value=x.Sumber;$('f-kec').value=x.Kecamatan;isiDesa(x.Desa);$('f-jenis').value=x.Jenis;$('f-luas').value=x.Luas;
-  $('f-kondisi').value=x.Kondisi;$('f-pelapor').value=x.Pelapor;$('f-ket').value=x.Keterangan;setTimeout(()=>pilih(x.Lat,x.Lng,false),150)}
+        // ---- form laporan ----
+        function initMap() {
+            if (!map) {
+                map = L.map('map').setView([-1.9, 113.2], 8);
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+                map.on('click', e => pilih(e.latlng.lat, e.latlng.lng, true))
+            }
+            map.invalidateSize()
+        }
+        async function pilih(lat, lng, deteksi) {
+            $('f-lat').value = (+lat).toFixed(6);
+            $('f-lng').value = (+lng).toFixed(6);
+            if (map) {
+                mk && map.removeLayer(mk);
+                mk = L.marker([lat, lng]).addTo(map);
+                map.setView([lat, lng], 12)
+            }
+            if (deteksi) {
+                const j = await fetch(`${API}?action=deteksi&lat=${lat}&lng=${lng}`).then(r => r.json()).catch(() => ({}));
+                if (j.hasil) {
+                    $('f-kec').value = j.hasil.kecamatan;
+                    isiDesa(j.hasil.desa)
+                } else alert('Titik berada di luar Kabupaten Katingan.')
+            }
+        }
 
-// ---- PDF (cetak -> simpan sebagai PDF) ----
-$('pg').onclick=()=>{const a=$('p1').value,b=$('p2').value,k=$('pk').value,s=$('ps').value;
-  const l=LAP.filter(x=>{const d=x.Tgl.slice(0,10);return(!a||d>=a)&&(!b||d<=b)&&(!k||x.Kecamatan===k)&&(!s||x.Status===s)}).sort((p,q)=>p.Tgl.localeCompare(q.Tgl));
-  if(!l.length)return alert('Tidak ada laporan pada filter tersebut.');
-  const c=cnt(l,x=>x.Status),now=new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'});
-  const html=`<html><head><meta charset="utf-8"><title>Laporan Karhutla</title><style>@page{size:A4;margin:15mm}body{font:11px Arial;color:#111}h1{font-size:16px;text-align:center;margin:0}h2{font-size:13px;margin:14px 0 4px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:3px 5px;text-align:left;vertical-align:top}th{background:#e5e7eb}.pb{page-break-inside:avoid;margin-top:12px;border:1px solid #888;padding:8px}img{height:90px;margin:3px;border:1px solid #aaa}.ttd{margin-top:30px;float:right;text-align:center;width:200px}</style></head><body>
+        function isiHotspot(x) {
+            const m = /(\d{4}-\d{2}-\d{2})\D+(\d{2}:\d{2})/.exec(x.time || '');
+            if (m) $('f-tgl').value = m[1] + 'T' + m[2];
+            $('f-sumber').value = 'Satelit / Hotspot';
+            $('f-ref').value = (x.time || '') + '|' + x.latitude + '|' + x.longitude;
+            if (WIL[x.kecamatan]) {
+                $('f-kec').value = x.kecamatan;
+                isiDesa(x.village)
+            }
+            setTimeout(() => pilih(x.latitude, x.longitude, false), 100)
+        }
+        $('rs').onclick = () => {
+            $('fb').reset();
+            $('f-no').value = '';
+            $('f-ref').value = '';
+            isiDesa()
+        };
+        $('fb').onsubmit = e => {
+            e.preventDefault();
+            wrap(async () => {
+                $('sv').disabled = true;
+                try {
+                    const g = i => $('f-' + i).value;
+                    const r = await api('save', {
+                        data: {
+                            no: g('no'),
+                            ref: g('ref'),
+                            tgl: g('tgl'),
+                            sumber: g('sumber'),
+                            kecamatan: g('kec'),
+                            desa: g('desa'),
+                            lat: g('lat'),
+                            lng: g('lng'),
+                            jenis: g('jenis'),
+                            luas: g('luas'),
+                            kondisi: g('kondisi'),
+                            pelapor: g('pelapor'),
+                            keterangan: g('ket'),
+                            fotoBase64: await fotos($('f-foto'))
+                        }
+                    });
+                    alert('Laporan tersimpan: ' + r.no);
+                    $('rs').click();
+                    await muat();
+                    show('laporan')
+                } finally {
+                    $('sv').disabled = false
+                }
+            })
+        };
+
+        function edit(no) {
+            const x = LAP.find(r => r.No === no);
+            $('modal').classList.add('hidden');
+            show('buat');
+            $('f-no').value = x.No;
+            $('f-ref').value = x.Ref;
+            $('f-tgl').value = x.Tgl;
+            $('f-sumber').value = x.Sumber;
+            $('f-kec').value = x.Kecamatan;
+            isiDesa(x.Desa);
+            $('f-jenis').value = x.Jenis;
+            $('f-luas').value = x.Luas;
+            $('f-kondisi').value = x.Kondisi;
+            $('f-pelapor').value = x.Pelapor;
+            $('f-ket').value = x.Keterangan;
+            setTimeout(() => pilih(x.Lat, x.Lng, false), 150)
+        }
+
+        // ---- PDF (cetak -> simpan sebagai PDF) ----
+        $('pg').onclick = () => {
+            const a = $('p1').value,
+                b = $('p2').value,
+                k = $('pk').value,
+                s = $('ps').value;
+            const l = LAP.filter(x => {
+                const d = x.Tgl.slice(0, 10);
+                return (!a || d >= a) && (!b || d <= b) && (!k || x.Kecamatan === k) && (!s || x.Status === s)
+            }).sort((p, q) => p.Tgl.localeCompare(q.Tgl));
+            if (!l.length) return alert('Tidak ada laporan pada filter tersebut.');
+            const c = cnt(l, x => x.Status),
+                now = new Date().toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta'
+                });
+            const html = `<html><head><meta charset="utf-8"><title>Laporan Karhutla</title><style>@page{size:A4;margin:15mm}body{font:11px Arial;color:#111}h1{font-size:16px;text-align:center;margin:0}h2{font-size:13px;margin:14px 0 4px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:3px 5px;text-align:left;vertical-align:top}th{background:#e5e7eb}.pb{page-break-inside:avoid;margin-top:12px;border:1px solid #888;padding:8px}img{height:90px;margin:3px;border:1px solid #aaa}.ttd{margin-top:30px;float:right;text-align:center;width:200px}</style></head><body>
   <h1>LAPORAN KEJADIAN KEBAKARAN HUTAN DAN LAHAN</h1><h1>KABUPATEN KATINGAN</h1><p style="text-align:center">Periode: ${esc(a||'awal')} s.d. ${esc(b||'sekarang')} · Wilayah: ${esc(k||'Seluruh kecamatan')} · Status: ${esc(s||'Semua')}</p>
   <h2>Ringkasan</h2><table><tr><th>Total</th>${ST.map(x=>`<th>${x}</th>`).join('')}</tr><tr><td>${l.length}</td>${ST.map(x=>`<td>${c[x]||0}</td>`).join('')}</tr></table>
   <h2>Rekap Laporan</h2><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Lokasi</th><th>Jenis</th><th>Luas (ha)</th><th>Status</th></tr>${l.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${esc(x.Luas||'-')}</td><td>${esc(x.Status)}</td></tr>`).join('')}</table>
   <h2>Rincian</h2>${l.map(x=>`<div class="pb"><b>${esc(x.No)}</b> — ${esc(x.Status)}<br>${esc(x.Desa)}, ${esc(x.Kecamatan)} (${esc(x.Lat)}, ${esc(x.Lng)}) · ${esc(x.Jenis)} · ${esc(x.Kondisi)} · Sumber: ${esc(x.Sumber)} · Pelapor: ${esc(x.Pelapor)}<br>Keterangan: ${esc(x.Keterangan)||'-'}<br>Tindak lanjut: ${esc(x.TindakLanjut)||'-'}<br>Riwayat: ${x.riwayat.map(r=>esc(r.waktu)+' → '+esc(r.ke)).join('; ')}
   ${$('pf').checked?'<div>'+x.Foto.map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
   <div class="ttd">Katingan, ${esc(now.split(',')[0])}<br>Operator<br><br><br><b>${esc(ME.n)}</b></div></body></html>`;
-  const w=window.open('','_blank');if(!w)return alert('Izinkan pop-up untuk mencetak.');w.document.write(html);w.document.close();setTimeout(()=>w.print(),1800)};
+            const w = window.open('', '_blank');
+            if (!w) return alert('Izinkan pop-up untuk mencetak.');
+            w.document.write(html);
+            w.document.close();
+            setTimeout(() => w.print(), 1800)
+        };
 
-// ---- pengguna & akun ----
-async function users(){const u=(await api('users')).data;$('urows').innerHTML=u.map(x=>`<tr class="border-t"><td class="p-2">${esc(x.Username)}</td><td>${esc(x.Nama)}</td><td>${esc(x.Role)}</td><td>${x.Aktif==='1'?'Ya':'Tidak'}</td><td class="whitespace-nowrap"><button class="btn g !py-1" onclick="euser('${esc(x.Username)}','${esc(x.Nama)}','${esc(x.Role)}',${x.Aktif==='1'})">Ubah</button> <button class="btn r !py-1" onclick="duser('${esc(x.Username)}')">Hapus</button></td></tr>`).join('')}
-const euser=(a,b,c,d)=>{$('u-un').value=a;$('u-n').value=b;$('u-r').value=c;$('u-a').checked=d;$('u-p').value=''};
-const duser=un=>wrap(async()=>{if(confirm('Hapus pengguna '+un+'?')){await api('hapusUser',{username:un});users()}});
-$('fu').onsubmit=e=>{e.preventDefault();wrap(async()=>{await api('saveUser',{username:$('u-un').value,nama:$('u-n').value,role:$('u-r').value,aktif:$('u-a').checked,password:$('u-p').value});$('fu').reset();users()})};
-$('fa').onsubmit=e=>{e.preventDefault();wrap(async()=>{await api('gantiPassword',{lama:$('a1').value,baru:$('a2').value});$('fa').reset();alert('Password diganti.')})};
-</script></body></html>
+        // ---- pengguna & akun ----
+        async function users() {
+            const u = (await api('users')).data;
+            $('urows').innerHTML = u.map(x => `<tr class="border-t"><td class="p-2">${esc(x.Username)}</td><td>${esc(x.Nama)}</td><td>${esc(x.Role)}</td><td>${x.Aktif==='1'?'Ya':'Tidak'}</td><td class="whitespace-nowrap"><button class="btn g !py-1" onclick="euser('${esc(x.Username)}','${esc(x.Nama)}','${esc(x.Role)}',${x.Aktif==='1'})">Ubah</button> <button class="btn r !py-1" onclick="duser('${esc(x.Username)}')">Hapus</button></td></tr>`).join('')
+        }
+        const euser = (a, b, c, d) => {
+            $('u-un').value = a;
+            $('u-n').value = b;
+            $('u-r').value = c;
+            $('u-a').checked = d;
+            $('u-p').value = ''
+        };
+        const duser = un => wrap(async () => {
+            if (confirm('Hapus pengguna ' + un + '?')) {
+                await api('hapusUser', {
+                    username: un
+                });
+                users()
+            }
+        });
+        $('fu').onsubmit = e => {
+            e.preventDefault();
+            wrap(async () => {
+                await api('saveUser', {
+                    username: $('u-un').value,
+                    nama: $('u-n').value,
+                    role: $('u-r').value,
+                    aktif: $('u-a').checked,
+                    password: $('u-p').value
+                });
+                $('fu').reset();
+                users()
+            })
+        };
+        $('fa').onsubmit = e => {
+            e.preventDefault();
+            wrap(async () => {
+                await api('gantiPassword', {
+                    lama: $('a1').value,
+                    baru: $('a2').value
+                });
+                $('fa').reset();
+                alert('Password diganti.')
+            })
+        };
+    </script>
+</body>
+
+</html>
