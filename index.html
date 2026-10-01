@@ -101,10 +101,12 @@
             <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold">
                 <a href="#dashboard" class="px-3 py-2 rounded-lg text-emerald-700 bg-emerald-50 transition-colors dark:text-emerald-400 dark:bg-emerald-900/40">Dashboard</a>
                 <a href="#gis-map" class="px-3 py-2 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:bg-slate-800">Peta Interaktif</a>
+                <a href="#laporan-publik" class="px-3 py-2 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:bg-slate-800">Laporan</a>
                 <a href="#hotspot-table-body" class="px-3 py-2 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition-colors dark:text-slate-300 dark:hover:bg-slate-800">Daftar Hotspot</a>
             </nav>
 
             <div class="flex items-center gap-2">
+                <a href="admin.html" class="inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 rounded-xl shadow-sm">Login Admin</a>
                 <!-- Tombol Ganti Tema Gelap / Terang -->
                 <button id="btn-theme-toggle" title="Ganti tema gelap/terang" class="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all active:scale-95 cursor-pointer dark:bg-slate-800 dark:border-slate-700 dark:text-amber-300 dark:hover:bg-slate-700">
                     <svg id="icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -281,6 +283,20 @@
             </div>
         </div>
     </main>
+
+    <section id="laporan-publik" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full space-y-4">
+        <h2 class="font-extrabold text-lg">Laporan Karhutla</h2>
+        <div id="lp-cards" class="grid grid-cols-2 md:grid-cols-6 gap-3"></div>
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 dark:bg-slate-900 dark:border-slate-700"><b class="text-sm">Per Kecamatan</b><canvas id="lp-c1" height="170"></canvas></div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 dark:bg-slate-900 dark:border-slate-700"><b class="text-sm">Per Status</b><canvas id="lp-c2" height="170"></canvas></div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 dark:bg-slate-900 dark:border-slate-700"><b class="text-sm">Per Desa/Kelurahan (10 teratas)</b><canvas id="lp-c3" height="170"></canvas></div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 dark:bg-slate-900 dark:border-slate-700"><b class="text-sm">Per Tanggal Kejadian</b><canvas id="lp-c4" height="170"></canvas></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 overflow-x-auto dark:bg-slate-900 dark:border-slate-700"><b class="text-sm">Laporan Terbaru</b>
+            <table class="w-full text-xs mt-2"><tbody id="lp-rows"></tbody></table></div>
+    </section>
+
 
 <!-- Footer -->
 <footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -1022,6 +1038,7 @@
                                 `<div class="flex items-center justify-between pt-2.5 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700">` +
                                     `<span class="text-[10px] text-slate-400 font-mono">${h.lat.toFixed(5)}, ${h.lng.toFixed(5)}</span>` +
                                 `</div>` +
+                                `<a href="admin.html?buat=1&lat=${h.lat}&lng=${h.lng}&desa=${encodeURIComponent(h.village)}&kec=${encodeURIComponent(h.kecamatan)}&time=${encodeURIComponent(h.time)}" style="color:#fff" class="flex items-center justify-center w-full bg-red-600 hover:bg-red-700 text-xs font-bold py-2.5 rounded-xl mb-2">📝 Buat Laporan</a>` +
                                 `<a href="${routeUrl}" target="_blank" ` +
                                     `class="flex items-center justify-center gap-1.5 w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-colors shadow-sm">` +
                                     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>` +
@@ -1127,5 +1144,25 @@
         // Muat data otomatis saat halaman dibuka
         fetchRealtimeData(false);
     </script>
+<script>
+(function(){
+ const ST=['LAPORAN MASUK','BELUM DIVERIFIKASI','DALAM VERIFIKASI','TERVERIFIKASI','DITINDAKLANJUTI','SELESAI'],WR=['#64748b','#f59e0b','#3b82f6','#10b981','#8b5cf6','#059669'];
+ const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const cnt=(l,f)=>{const o={};l.forEach(x=>{const k=f(x);o[k]=(o[k]||0)+1});return o};
+ const ch=(id,t,L,D,C,o)=>new Chart(document.getElementById(id),{type:t,data:{labels:L,datasets:[{data:D,backgroundColor:C,borderColor:C}]},options:Object.assign({plugins:{legend:{display:t==='doughnut'}}},o||{})});
+ async function muat(){
+  try{
+   const j=await fetch(GAS_API_URL+'?action=laporan_publik',{cache:'no-store'}).then(r=>r.json());const l=j.daftar||[],c=cnt(l,x=>x.status);
+   document.getElementById('lp-cards').innerHTML='<div class="bg-white border rounded-2xl p-3 dark:bg-slate-900"><div class="text-[10px] font-bold text-slate-500">TOTAL</div><div class="text-2xl font-black">'+l.length+'</div></div>'+ST.map((s,i)=>'<div class="bg-white border rounded-2xl p-3 dark:bg-slate-900" style="border-top:4px solid '+WR[i]+'"><div class="text-[10px] font-bold text-slate-500">'+s+'</div><div class="text-2xl font-black">'+(c[s]||0)+'</div></div>').join('');
+   const k=cnt(l,x=>x.kec);ch('lp-c1','bar',Object.keys(k),Object.values(k),'#059669');
+   ch('lp-c2','doughnut',ST,ST.map(s=>c[s]||0),WR);
+   const d=Object.entries(cnt(l,x=>x.desa)).sort((a,b)=>b[1]-a[1]).slice(0,10);ch('lp-c3','bar',d.map(x=>x[0]),d.map(x=>x[1]),'#f59e0b',{indexAxis:'y'});
+   const t=Object.entries(cnt(l.filter(x=>x.tgl),x=>x.tgl.slice(0,10))).sort().slice(-30);ch('lp-c4','line',t.map(x=>x[0]),t.map(x=>x[1]),'#3b82f6');
+   document.getElementById('lp-rows').innerHTML=l.slice(0,10).map(x=>'<tr class="border-t"><td class="py-1.5 font-mono">'+E(x.no)+'</td><td>'+E((x.tgl||'').replace('T',' '))+'</td><td>'+E(x.desa)+', '+E(x.kec)+'</td><td>'+E(x.jenis)+'</td><td><b>'+E(x.status)+'</b></td></tr>').join('')||'<tr><td class="text-slate-400 py-2">Belum ada laporan.</td></tr>';
+  }catch(e){console.error('Laporan publik gagal dimuat',e)}
+ }
+ muat();
+})();
+</script>
 </body>
 </html>
