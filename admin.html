@@ -68,6 +68,7 @@
             color: #047857
         }
     </style>
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 
 <body class="bg-slate-50 text-slate-800">
@@ -75,23 +76,23 @@
     <div id="login" class="min-h-screen flex items-center justify-center p-4">
         <form id="fl" class="card w-full max-w-sm space-y-3 shadow">
             <div class="text-center">
-                <div class="text-3xl">🔥</div>
+                <div class="flex justify-center text-red-500"><i data-lucide="flame" class="w-10 h-10"></i></div>
                 <h1 class="font-extrabold text-lg">Login Admin</h1>
                 <p class="text-xs text-slate-500">Laporan Karhutla Kabupaten Katingan</p>
             </div>
             <div><label class="lb">Username</label><input id="lu" class="in" autocomplete="username" required></div>
             <div><label class="lb">Password</label><input id="lp" type="password" class="in" autocomplete="current-password" required></div>
             <p id="le" class="text-xs text-red-600 font-semibold"></p>
-            <button class="btn w-full py-2.5">Masuk</button>
-            <a href="index.html" class="block text-center text-xs text-slate-500">← Kembali ke dashboard</a>
+            <button class="btn w-full py-2.5"><i data-lucide="log-in" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Masuk</button>
+            <a href="index.html" class="block text-center text-xs text-slate-500"><i data-lucide="arrow-left" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Kembali ke dashboard</a>
         </form>
     </div>
 
     <div id="app" class="hidden">
         <header class="bg-emerald-800 text-white sticky top-0 z-40">
             <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-                <b>Admin Karhutla Katingan</b>
-                <div class="flex items-center gap-3 text-xs"><span id="who"></span><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1">Keluar</button></div>
+                <b class="flex items-center gap-2"><i data-lucide="flame" class="w-5 h-5 text-amber-300"></i>Admin Karhutla Katingan</b>
+                <div class="flex items-center gap-3 text-xs"><span id="who"></span><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1"><i data-lucide="log-out" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Keluar</button></div>
             </div>
         </header>
         <nav id="tabs" class="bg-white border-b flex overflow-x-auto text-sm font-semibold sticky top-14 z-30"></nav>
@@ -158,7 +159,7 @@
                     <div><label class="lb">Nama pelapor/petugas *</label><input id="f-pelapor" class="in" required></div>
                     <div class="md:col-span-2"><label class="lb">Keterangan</label><textarea id="f-ket" rows="3" class="in"></textarea></div>
                     <div class="md:col-span-2"><label class="lb">Foto dokumentasi (maks. 6)</label><input id="f-foto" type="file" accept="image/*" multiple class="in"></div>
-                    <div class="md:col-span-2 flex gap-2"><button class="btn" id="sv">Simpan Laporan</button><button type="button" class="btn g" id="rs">Reset</button></div>
+                    <div class="md:col-span-2 flex gap-2"><button class="btn" id="sv"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan Laporan</button><button type="button" class="btn g" id="rs"><i data-lucide="rotate-ccw" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Reset</button></div>
                 </form>
             </section>
 
@@ -169,7 +170,7 @@
                     <div><label class="lb">Kecamatan</label><select id="pk" class="in"></select></div>
                     <div><label class="lb">Status</label><select id="ps" class="in"></select></div>
                     <label class="text-sm md:col-span-2"><input type="checkbox" id="pf" checked> Sertakan foto dokumentasi</label>
-                    <div class="md:col-span-2"><button class="btn" id="pg">Buat Laporan PDF</button></div>
+                    <div class="md:col-span-2"><button class="btn" id="pg"><i data-lucide="printer" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Buat Laporan PDF</button></div>
                     <p class="text-xs text-slate-500 md:col-span-4">Jendela cetak akan terbuka. Pilih <b>Simpan sebagai PDF</b> pada printer untuk menyimpan.</p>
                 </div>
             </section>
@@ -197,13 +198,13 @@
                             <option>admin</option>
                         </select></div>
                     <div><label class="lb">Password (kosongkan jika tidak diubah)</label><input id="u-p" type="password" class="in" autocomplete="new-password"></div>
-                    <label class="text-sm"><input type="checkbox" id="u-a" checked> Aktif</label><button class="btn w-full">Simpan Pengguna</button>
+                    <label class="text-sm"><input type="checkbox" id="u-a" checked> Aktif</label><button class="btn w-full"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan Pengguna</button>
                 </form>
             </section>
 
             <section id="t-akun" class="hidden">
                 <form id="fa" class="card max-w-sm space-y-2"><b class="text-sm">Ganti Password</b>
-                    <input id="a1" type="password" class="in" placeholder="Password lama" required><input id="a2" type="password" class="in" placeholder="Password baru (min. 8)" required><button class="btn">Simpan</button>
+                    <input id="a1" type="password" class="in" placeholder="Password lama" required><input id="a2" type="password" class="in" placeholder="Password baru (min. 8)" required><button class="btn"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan</button>
                 </form>
             </section>
         </main>
@@ -218,7 +219,7 @@
         window.renderStat = function(p, all) {
             const ST = ['LAPORAN MASUK', 'BELUM DIVERIFIKASI', 'DALAM VERIFIKASI', 'TERVERIFIKASI', 'DITINDAKLANJUTI', 'SELESAI'],
                 WR = ['#64748b', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#059669'],
-                IC = ['📥', '⏳', '🔍', '✅', '🚒', '🏁'];
+                IC = ['inbox', 'hourglass', 'search', 'badge-check', 'siren', 'circle-check-big'];
             const root = document.getElementById(p + '-stat');
             if (!root) return;
             (root._ch || []).forEach(c => c.destroy());
@@ -262,16 +263,17 @@
             ].map(a => `<button data-r="${a[0]}" class="px-3 py-1 rounded-full text-xs font-bold ${a[0]===R?'bg-emerald-600 text-white':'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}">${a[1]}</button>`).join('');
             root.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2"><div class="text-xs text-slate-500">Menurut tanggal kejadian</div><div class="flex gap-1.5">${chips}</div></div>
  <div class="grid md:grid-cols-3 gap-3 mt-3">
-  <div class="rounded-2xl p-4 text-white shadow-sm" style="background:linear-gradient(135deg,#047857,#14b8a6)"><div class="text-xs font-semibold opacity-80">Total Laporan</div><div class="text-4xl font-black mt-1">${n}</div><div class="text-xs opacity-80 mt-1">${(c[ST[4]]||0)} sedang ditindaklanjuti</div></div>
-  <div class="${CARD}"><div class="flex justify-between text-xs font-semibold text-slate-500"><span>Tingkat Penyelesaian</span><b class="text-emerald-600 text-base">${pc(done)}%</b></div><div class="h-3 rounded-full bg-slate-100 dark:bg-slate-800 mt-3 overflow-hidden"><div class="h-3 rounded-full" style="width:${pc(done)}%;background:linear-gradient(90deg,#10b981,#059669)"></div></div><div class="text-xs text-slate-500 mt-2">${done} dari ${n} laporan selesai</div></div>
-  <div class="${CARD}" style="border-left:5px solid #f59e0b"><div class="text-xs font-semibold text-slate-500">Menunggu Verifikasi</div><div class="text-4xl font-black text-amber-500 mt-1">${perlu}</div><div class="text-xs text-slate-500 mt-1">laporan masuk &amp; belum diverifikasi</div></div></div>
- <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mt-3">${ST.map((s,i)=>`<div class="${CARD} !p-3 text-center" style="border-top:4px solid ${WR[i]}"><div class="text-xl">${IC[i]}</div><div class="text-2xl font-black">${c[s]||0}</div><div class="text-[10px] font-bold text-slate-500 leading-tight">${s}</div><div class="text-[10px] mt-0.5" style="color:${WR[i]}">${pc(c[s]||0)}%</div></div>`).join('')}</div>
- <div class="${CARD} mt-3"><div class="text-sm font-bold mb-2">Alur Penanganan</div><div class="flex h-7 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">${ST.map((s,i)=>c[s]?`<div title="${s}: ${c[s]}" class="flex items-center justify-center text-[11px] font-bold text-white" style="width:${pc(c[s])}%;background:${WR[i]}">${pc(c[s])>=8?c[s]:''}</div>`:'').join('')}</div></div>
+  <div class="rounded-2xl p-4 text-white shadow-sm" style="background:linear-gradient(135deg,#047857,#14b8a6)"><div class="text-xs font-semibold opacity-80 flex items-center gap-1.5"><i data-lucide="clipboard-list" class="w-4 h-4"></i>Total Laporan</div><div class="text-4xl font-black mt-1">${n}</div><div class="text-xs opacity-80 mt-1">${(c[ST[4]]||0)} sedang ditindaklanjuti</div></div>
+  <div class="${CARD}"><div class="flex justify-between text-xs font-semibold text-slate-500"><span class="flex items-center gap-1.5"><i data-lucide="gauge" class="w-4 h-4"></i>Tingkat Penyelesaian</span><b class="text-emerald-600 text-base">${pc(done)}%</b></div><div class="h-3 rounded-full bg-slate-100 dark:bg-slate-800 mt-3 overflow-hidden"><div class="h-3 rounded-full" style="width:${pc(done)}%;background:linear-gradient(90deg,#10b981,#059669)"></div></div><div class="text-xs text-slate-500 mt-2">${done} dari ${n} laporan selesai</div></div>
+  <div class="${CARD}" style="border-left:5px solid #f59e0b"><div class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i data-lucide="triangle-alert" class="w-4 h-4 text-amber-500"></i>Menunggu Verifikasi</div><div class="text-4xl font-black text-amber-500 mt-1">${perlu}</div><div class="text-xs text-slate-500 mt-1">laporan masuk &amp; belum diverifikasi</div></div></div>
+ <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mt-3">${ST.map((s,i)=>`<div class="${CARD} !p-3 text-center" style="border-top:4px solid ${WR[i]}"><div class="flex justify-center" style="color:${WR[i]}"><i data-lucide="${IC[i]}" class="w-6 h-6"></i></div><div class="text-2xl font-black">${c[s]||0}</div><div class="text-[10px] font-bold text-slate-500 leading-tight">${s}</div><div class="text-[10px] mt-0.5" style="color:${WR[i]}">${pc(c[s]||0)}%</div></div>`).join('')}</div>
+ <div class="${CARD} mt-3"><div class="text-sm font-bold mb-2"><i data-lucide="workflow" class="w-4 h-4 inline -mt-0.5 mr-1.5 text-emerald-600"></i>Alur Penanganan</div><div class="flex h-7 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">${ST.map((s,i)=>c[s]?`<div title="${s}: ${c[s]}" class="flex items-center justify-center text-[11px] font-bold text-white" style="width:${pc(c[s])}%;background:${WR[i]}">${pc(c[s])>=8?c[s]:''}</div>`:'').join('')}</div></div>
  <div class="grid md:grid-cols-2 gap-3 mt-3">
-  <div class="${CARD}"><div class="text-sm font-bold mb-2">Komposisi Status</div><div style="height:230px"><canvas id="${p}-d"></canvas></div></div>
-  <div class="${CARD}"><div class="text-sm font-bold mb-2">Tren Laporan per Hari</div><div style="height:230px"><canvas id="${p}-t"></canvas></div></div>
-  <div class="${CARD}"><div class="text-sm font-bold mb-3">Kecamatan Terbanyak</div>${rank(cnt(x=>x.kec),'linear-gradient(90deg,#10b981,#14b8a6)')}</div>
-  <div class="${CARD}"><div class="text-sm font-bold mb-3">Desa/Kelurahan Terbanyak</div>${rank(cnt(x=>x.desa),'linear-gradient(90deg,#f59e0b,#f97316)')}</div></div>`;
+  <div class="${CARD}"><div class="text-sm font-bold mb-2"><i data-lucide="chart-pie" class="w-4 h-4 inline -mt-0.5 mr-1.5 text-emerald-600"></i>Komposisi Status</div><div style="height:230px"><canvas id="${p}-d"></canvas></div></div>
+  <div class="${CARD}"><div class="text-sm font-bold mb-2"><i data-lucide="trending-up" class="w-4 h-4 inline -mt-0.5 mr-1.5 text-emerald-600"></i>Tren Laporan per Hari</div><div style="height:230px"><canvas id="${p}-t"></canvas></div></div>
+  <div class="${CARD}"><div class="text-sm font-bold mb-3"><i data-lucide="map-pinned" class="w-4 h-4 inline -mt-0.5 mr-1.5 text-emerald-600"></i>Kecamatan Terbanyak</div>${rank(cnt(x=>x.kec),'linear-gradient(90deg,#10b981,#14b8a6)')}</div>
+  <div class="${CARD}"><div class="text-sm font-bold mb-3"><i data-lucide="house" class="w-4 h-4 inline -mt-0.5 mr-1.5 text-emerald-600"></i>Desa/Kelurahan Terbanyak</div>${rank(cnt(x=>x.desa),'linear-gradient(90deg,#f59e0b,#f97316)')}</div></div>`;
+            window.lucide && lucide.createIcons();
             root.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
                 root.dataset.r = b.dataset.r;
                 renderStat(p, all)
@@ -474,14 +476,14 @@
             $('app').classList.remove('hidden');
             $('who').textContent = `${ME.n} (${ME.r})`;
             const T = [
-                ['ringkasan', 'Ringkasan'],
-                ['laporan', 'Laporan'],
-                ['buat', '+ Buat Laporan'],
-                ['pdf', 'Laporan PDF'], ...(ME.r === 'admin' ? [
-                    ['user', 'Pengguna']
-                ] : []), ['akun', 'Akun']
+                ['ringkasan', 'Ringkasan', 'layout-dashboard'],
+                ['laporan', 'Laporan', 'clipboard-list'],
+                ['buat', 'Buat Laporan', 'file-plus'],
+                ['pdf', 'Laporan PDF', 'file-down'], ...(ME.r === 'admin' ? [
+                    ['user', 'Pengguna', 'users']
+                ] : []), ['akun', 'Akun', 'key-round']
             ];
-            $('tabs').innerHTML = T.map(t => `<button class="tab" data-t="${t[0]}">${t[1]}</button>`).join('');
+            $('tabs').innerHTML = T.map(t => `<button class="tab flex items-center gap-1.5" data-t="${t[0]}"><i data-lucide="${t[2]}" class="w-4 h-4 pointer-events-none"></i>${t[1]}</button>`).join('');
             $('tabs').onclick = e => e.target.dataset.t && show(e.target.dataset.t);
             const [w, h] = await Promise.all([fetch(API + '?action=wilayah').then(r => r.json()).catch(() => ({})), fetch(API).then(r => r.json()).catch(() => ({}))]);
             WIL = w.wilayah || {};
@@ -589,23 +591,23 @@
                 k = $('fk').value,
                 q = $('fq').value.toLowerCase();
             const l = LAP.filter(x => (!s || x.Status === s) && (!k || x.Kecamatan === k) && (!q || (x.No + x.Desa + x.Pelapor).toLowerCase().includes(q)));
-            $('rows').innerHTML = l.map(x => `<tr class="border-t"><td class="p-2 font-mono">${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${badge(x.Status)}</td><td><button class="btn !py-1" onclick="detail('${esc(x.No)}')">Detail</button></td></tr>`).join('') || '<tr><td class="p-3 text-slate-400">Belum ada laporan.</td></tr>'
+            $('rows').innerHTML = l.map(x => `<tr class="border-t"><td class="p-2 font-mono">${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${badge(x.Status)}</td><td><button class="btn !py-1" onclick="detail('${esc(x.No)}')"><i data-lucide="eye" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Detail</button></td></tr>`).join('') || '<tr><td class="p-3 text-slate-400">Belum ada laporan.</td></tr>'
         }
 
         function detail(no) {
             const x = LAP.find(r => r.No === no),
                 i = ST.indexOf(x.Status);
             const opts = (ME.r === 'admin' ? ST.filter(s => s !== x.Status) : ST.slice(i + 1, i + 2));
-            $('mb').innerHTML = `<div class="flex justify-between"><div><div class="font-mono font-bold">${esc(x.No)}</div>${badge(x.Status)}</div><button class="btn g" onclick="$('modal').classList.add('hidden')">Tutup</button></div>
+            $('mb').innerHTML = `<div class="flex justify-between"><div><div class="font-mono font-bold">${esc(x.No)}</div>${badge(x.Status)}</div><button class="btn g" onclick="$('modal').classList.add('hidden')"><i data-lucide="x" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Tutup</button></div>
   <div class="grid grid-cols-2 gap-2 text-xs">${[['Tanggal kejadian',x.Tgl.replace('T',' ')],['Sumber',x.Sumber],['Lokasi',x.Desa+', '+x.Kecamatan],['Koordinat',x.Lat+', '+x.Lng],['Jenis',x.Jenis],['Perkiraan luas',(x.Luas||'-')+' ha'],['Kondisi',x.Kondisi],['Pelapor',x.Pelapor],['Dibuat',x.Dibuat+' oleh '+x.DibuatOleh]].map(a=>`<div><div class="lb">${a[0]}</div>${esc(a[1])}</div>`).join('')}</div>
   <p class="text-xs"><span class="lb">Keterangan</span>${esc(x.Keterangan)||'-'}</p>${x.TindakLanjut?`<p class="text-xs"><span class="lb">Tindak lanjut</span>${esc(x.TindakLanjut)}</p>`:''}
   <div class="flex flex-wrap gap-2">${x.Foto.map(f=>`<a target="_blank" href="${img(f,1600)}"><img src="${img(f,300)}" class="h-24 rounded-lg border"></a>`).join('')}</div>
-  <a class="text-xs text-emerald-700 underline" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${x.Lat},${x.Lng}">Buka di Google Maps</a>
+  <a class="text-xs text-emerald-700 underline" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${x.Lat},${x.Lng}"><i data-lucide="map-pin" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Buka di Google Maps</a>
   <div><div class="lb">Riwayat perubahan status</div><ol class="text-xs space-y-1 border-l-2 border-emerald-500 pl-3">${x.riwayat.map(r=>`<li><b>${esc(r.ke)}</b> · ${esc(r.waktu)} · ${esc(r.oleh)}${r.catatan?`<br><span class="text-slate-500">${esc(r.catatan)}</span>`:''}</li>`).join('')}</ol></div>
   ${opts.length?`<div class="border-t pt-3 space-y-2"><div class="lb">Perbarui status</div><select id="ns" class="in">${opts.map(o=>`<option>${o}</option>`).join('')}</select>
   <textarea id="nc" rows="2" class="in" placeholder="Catatan / keterangan tindak lanjut (wajib untuk DITINDAKLANJUTI & SELESAI)"></textarea><input id="nf" type="file" accept="image/*" multiple class="in">
-  <button class="btn" onclick="ubahStatus('${esc(x.No)}')">Simpan Status</button></div>`:''}
-  <div class="flex gap-2"><button class="btn g" onclick="edit('${esc(x.No)}')">Edit data</button>${ME.r==='admin'?`<button class="btn r" onclick="hapus('${esc(x.No)}')">Hapus</button>`:''}</div>`;
+  <button class="btn" onclick="ubahStatus('${esc(x.No)}')"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan Status</button></div>`:''}
+  <div class="flex gap-2"><button class="btn g" onclick="edit('${esc(x.No)}')"><i data-lucide="pencil" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Edit data</button>${ME.r==='admin'?`<button class="btn r" onclick="hapus('${esc(x.No)}')"><i data-lucide="trash-2" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Hapus</button>`:''}</div>`;
             $('modal').classList.remove('hidden')
         }
         const kompres = f => new Promise(res => {
@@ -773,7 +775,7 @@
         // ---- pengguna & akun ----
         async function users() {
             const u = (await api('users')).data;
-            $('urows').innerHTML = u.map(x => `<tr class="border-t"><td class="p-2">${esc(x.Username)}</td><td>${esc(x.Nama)}</td><td>${esc(x.Role)}</td><td>${x.Aktif==='1'?'Ya':'Tidak'}</td><td class="whitespace-nowrap"><button class="btn g !py-1" onclick="euser('${esc(x.Username)}','${esc(x.Nama)}','${esc(x.Role)}',${x.Aktif==='1'})">Ubah</button> <button class="btn r !py-1" onclick="duser('${esc(x.Username)}')">Hapus</button></td></tr>`).join('')
+            $('urows').innerHTML = u.map(x => `<tr class="border-t"><td class="p-2">${esc(x.Username)}</td><td>${esc(x.Nama)}</td><td>${esc(x.Role)}</td><td>${x.Aktif==='1'?'Ya':'Tidak'}</td><td class="whitespace-nowrap"><button class="btn g !py-1" onclick="euser('${esc(x.Username)}','${esc(x.Nama)}','${esc(x.Role)}',${x.Aktif==='1'})"><i data-lucide="pencil" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Ubah</button> <button class="btn r !py-1" onclick="duser('${esc(x.Username)}')"><i data-lucide="trash-2" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Hapus</button></td></tr>`).join('')
         }
         const euser = (a, b, c, d) => {
             $('u-un').value = a;
@@ -815,6 +817,22 @@
                 alert('Password diganti.')
             })
         };
+    </script>
+    <script>
+        if (window.lucide) {
+            let q = 0;
+            const go = () => {
+                q = 0;
+                lucide.createIcons()
+            };
+            go();
+            new MutationObserver(() => {
+                if (!q) q = requestAnimationFrame(go)
+            }).observe(document.body, {
+                childList: true,
+                subtree: true
+            })
+        }
     </script>
 </body>
 
