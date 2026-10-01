@@ -7,30 +7,57 @@
     <title>Admin – Laporan Karhutla Kabupaten Katingan</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        };
+        (function() {
+            const d = localStorage.getItem('katinganTheme');
+            document.documentElement.classList.toggle('dark', d ? d === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches)
+        })()
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
+        body {
+            font-family: Inter, "Segoe UI", system-ui, sans-serif
+        }
+
         .in {
             width: 100%;
             border: 1px solid #cbd5e1;
             border-radius: .75rem;
-            padding: .55rem .75rem;
+            padding: .6rem .8rem;
             font-size: .875rem;
-            background: #fff
+            background: #fff;
+            transition: .15s
+        }
+
+        .in:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .2)
         }
 
         .btn {
-            padding: .5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .25rem;
+            padding: .55rem 1rem;
             border-radius: .75rem;
             font-weight: 700;
             font-size: .8rem;
             color: #fff;
-            background: #059669;
-            cursor: pointer
+            background: linear-gradient(135deg, #059669, #0d9488);
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+            transition: .15s
         }
 
         .btn:hover {
-            opacity: .9
+            filter: brightness(1.08);
+            transform: translateY(-1px)
         }
 
         .btn.g {
@@ -38,7 +65,7 @@
         }
 
         .btn.r {
-            background: #dc2626
+            background: linear-gradient(135deg, #dc2626, #e11d48)
         }
 
         .lb {
@@ -47,52 +74,126 @@
             font-weight: 700;
             color: #475569;
             text-transform: uppercase;
-            margin-bottom: .2rem
+            letter-spacing: .03em;
+            margin-bottom: .25rem
         }
 
         .card {
             background: #fff;
             border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-            padding: 1rem
+            border-radius: 1.1rem;
+            padding: 1.1rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .05)
+        }
+
+        #tabs {
+            gap: .4rem;
+            padding: .5rem .75rem
         }
 
         .tab {
-            padding: .75rem 1rem;
+            padding: .5rem .9rem;
+            border-radius: 999px;
             white-space: nowrap;
-            border-bottom: 3px solid transparent
+            color: #475569;
+            transition: .15s
+        }
+
+        .tab:hover {
+            background: #f1f5f9
         }
 
         .tab.on {
-            border-color: #059669;
+            background: #d1fae5;
             color: #047857
+        }
+
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: -1px
+        }
+
+        .dark body {
+            background: #020617;
+            color: #e2e8f0
+        }
+
+        .dark .in {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0
+        }
+
+        .dark .card {
+            background: #0f172a;
+            border-color: #1e293b
+        }
+
+        .dark .lb {
+            color: #94a3b8
+        }
+
+        .dark #tabs {
+            background: #0f172a;
+            border-color: #1e293b
+        }
+
+        .dark .tab {
+            color: #cbd5e1
+        }
+
+        .dark .tab:hover {
+            background: #1e293b
+        }
+
+        .dark .tab.on {
+            background: rgba(16, 185, 129, .18);
+            color: #6ee7b7
+        }
+
+        .dark #mb {
+            background: #0f172a;
+            color: #e2e8f0
+        }
+
+        .dark tr.border-t,
+        .dark .border-t {
+            border-color: #1e293b
+        }
+
+        .dark .text-slate-500 {
+            color: #94a3b8
         }
     </style>
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <div id="login" class="min-h-screen flex items-center justify-center p-4">
-        <form id="fl" class="card w-full max-w-sm space-y-3 shadow">
+    <div id="login" class="flex-1 flex items-center justify-center p-4">
+        <form id="fl" autocomplete="off" class="card w-full max-w-sm space-y-3 shadow">
             <div class="text-center">
                 <div class="flex justify-center text-red-500"><i data-lucide="flame" class="w-10 h-10"></i></div>
                 <h1 class="font-extrabold text-lg">Login Admin</h1>
                 <p class="text-xs text-slate-500">Laporan Karhutla Kabupaten Katingan</p>
             </div>
-            <div><label class="lb">Username</label><input id="lu" class="in" autocomplete="username" required></div>
-            <div><label class="lb">Password</label><input id="lp" type="password" class="in" autocomplete="current-password" required></div>
+            <div><label class="lb">Username</label><input id="lu" class="in" autocomplete="off" required></div>
+            <div><label class="lb">Password</label><input id="lp" type="password" class="in" autocomplete="new-password" required></div>
             <p id="le" class="text-xs text-red-600 font-semibold"></p>
             <button class="btn w-full py-2.5"><i data-lucide="log-in" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Masuk</button>
             <a href="index.html" class="block text-center text-xs text-slate-500"><i data-lucide="arrow-left" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Kembali ke dashboard</a>
         </form>
     </div>
 
-    <div id="app" class="hidden">
-        <header class="bg-emerald-800 text-white sticky top-0 z-40">
+    <div id="app" class="hidden flex-1">
+        <header class="bg-gradient-to-r from-emerald-800 to-teal-700 text-white sticky top-0 z-40 shadow-md">
             <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
                 <b class="flex items-center gap-2"><i data-lucide="flame" class="w-5 h-5 text-amber-300"></i>Admin Karhutla Katingan</b>
-                <div class="flex items-center gap-3 text-xs"><span id="who"></span><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1"><i data-lucide="log-out" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Keluar</button></div>
+                <div class="flex items-center gap-3 text-xs"><span id="who" class="hidden sm:inline"></span><button id="th" title="Tema gelap/terang" class="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 inline-flex items-center justify-center"><span id="im"><i data-lucide="moon" class="w-4 h-4"></i></span><span id="is" class="hidden"><i data-lucide="sun" class="w-4 h-4"></i></span></button><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1"><i data-lucide="log-out" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Keluar</button></div>
             </div>
         </header>
         <nav id="tabs" class="bg-white border-b flex overflow-x-auto text-sm font-semibold sticky top-14 z-30"></nav>
@@ -135,8 +236,10 @@
                         </select></div>
                     <div><label class="lb">Kecamatan *</label><select id="f-kec" class="in" required></select></div>
                     <div><label class="lb">Desa/Kelurahan *</label><select id="f-desa" class="in" required></select></div>
-                    <div class="md:col-span-2"><label class="lb">Koordinat * (klik peta untuk memilih lokasi)</label>
-                        <div id="map" class="h-64 rounded-xl border z-0"></div>
+                    <div class="md:col-span-2"><label class="lb">Peta lokasi &amp; koordinat *</label>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 mb-2"><span><i class="dot" style="background:#dc2626"></i>Hotspot confidence ≥ 80%</span><span><i class="dot" style="background:#f59e0b"></i>Hotspot &lt; 80%</span><span><i class="dot" style="background:#94a3b8"></i>Sudah dilaporkan</span><span><i class="dot" style="background:#10b981"></i>Batas wilayah tugas</span><span><i class="dot" style="background:#fb923c"></i>Desa terpilih</span></div>
+                        <div id="map" class="h-[28rem] rounded-xl border z-0"></div>
+                        <p class="text-[11px] text-slate-400 mt-1">Klik titik hotspot lalu "Buat Laporan", atau klik area peta untuk memilih lokasi manual.</p>
                     </div>
                     <div><label class="lb">Latitude *</label><input id="f-lat" class="in" required></div>
                     <div><label class="lb">Longitude *</label><input id="f-lng" class="in" required></div>
@@ -219,22 +322,22 @@
         </main>
     </div>
 
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
+            <p class="text-xs text-slate-500 font-medium dark:text-slate-400">
+                Penata Kelola Sistem dan Teknologi Informasi
+            </p>
+            <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
+                MEMET HARIYADI CHRISTIAN, S.T - ©2026
+            </p>
+        </div>
+    </footer>
+
     <div id="modal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-auto p-4">
         <div id="mb" class="bg-white rounded-2xl max-w-2xl mx-auto p-5 space-y-3"></div>
     </div>
-    
-<!-- Footer -->
-<footer class="mt-auto border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-center">
-        <p class="text-xs text-slate-500 font-medium dark:text-slate-400">
-            Penata Kelola Sistem dan Teknologi Informasi
-        </p>
-        <p class="text-xs text-slate-500 font-medium mt-1 dark:text-slate-400">
-            MEMET HARIYADI CHRISTIAN, S.T - ©2026
-        </p>
-    </div>
-</footer>
-    
+
     <script>
         /* ===== Tampilan statistik laporan (dipakai dashboard & admin) ===== */
         window.renderStat = function(p, all) {
@@ -416,6 +519,7 @@
             ME = null,
             LAP = [],
             HS = [],
+            HSA = [],
             WIL = {},
             map, mk, CH = {};
         const $ = id => document.getElementById(id),
@@ -476,15 +580,38 @@
                 $('le').textContent = x.message
             }
         };
-
-        function keluar() {
-            if (TOK) api('logout').catch(() => {});
+        async function keluar() {
+            const t = TOK;
             TOK = null;
-            sessionStorage.removeItem('kt_tok');
-            $('app').classList.add('hidden');
-            $('login').classList.remove('hidden')
+            sessionStorage.clear();
+            try {
+                if (t) await fetch(API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: JSON.stringify({
+                        action: 'logout',
+                        token: t
+                    })
+                })
+            } catch (e) {}
+            location.replace(location.pathname)
         }
         $('out').onclick = keluar;
+
+        function ikonTema() {
+            const d = document.documentElement.classList.contains('dark');
+            $('im').classList.toggle('hidden', d);
+            $('is').classList.toggle('hidden', !d)
+        }
+        ikonTema();
+        $('th').onclick = () => {
+            const d = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('katinganTheme', d ? 'dark' : 'light');
+            ikonTema();
+            if (ME) draw()
+        };
         (async () => {
             if (TOK) try {
                 ME = (await api('me')).user;
@@ -508,14 +635,19 @@
             $('tabs').onclick = e => e.target.dataset.t && show(e.target.dataset.t);
             const [w, h] = await Promise.all([fetch(API + '?action=wilayah').then(r => r.json()).catch(() => ({})), fetch(API).then(r => r.json()).catch(() => ({}))]);
             WIL = w.wilayah || {};
-            HS = (h.data || []).filter(x => inS(x.kecamatan, x.village)).slice(0, 150);
+            HSA = (h.data || []).filter(x => inS(x.kecamatan, x.village));
+            HS = HSA.slice(0, 150);
             const ko = (ME.r === 'admin' ? Object.keys(WIL).sort() : [ME.k]).map(k => `<option>${esc(k)}</option>`).join('');
             $('f-kec').innerHTML = ko;
             $('fk').innerHTML = '<option value="">Semua kecamatan</option>' + ko;
             $('pk').innerHTML = '<option value="">Semua kecamatan</option>' + ko;
             $('fs').innerHTML = '<option value="">Semua status</option>' + ST.map(s => `<option>${s}</option>`).join('');
             $('ps').innerHTML = $('fs').innerHTML;
-            $('f-kec').onchange = () => isiDesa();
+            $('f-kec').onchange = () => {
+                isiDesa();
+                hl()
+            };
+            $('f-desa').onchange = hl;
             isiDesa();
             $('f-hs').innerHTML = '<option value="">— pilih hotspot —</option>' + HS.map((x, i) => `<option value="${i}">${esc(x.village)} · ${esc(x.time)} · ${x.confidence}%</option>`).join('');
             $('f-hs').onchange = () => {
@@ -546,7 +678,8 @@
         }
         async function muat() {
             LAP = (await api('list')).data;
-            draw()
+            draw();
+            mapRefresh()
         }
 
         function show(t) {
@@ -672,15 +805,97 @@
         });
 
         // ---- form laporan ----
-        function initMap() {
-            if (!map) {
-                map = L.map('map').setView([-1.9, 113.2], 8);
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap'
-                }).addTo(map);
-                map.on('click', e => pilih(e.latlng.lat, e.latlng.lng, true))
+        let GJ = null,
+            POL = null,
+            HSL = null;
+        const refOf = x => (x.time || '') + '|' + x.latitude + '|' + x.longitude;
+        const polStyle = () => ME.r === 'admin' ? {
+            color: '#64748b',
+            weight: 1,
+            fillColor: '#94a3b8',
+            fillOpacity: .06
+        } : {
+            color: '#059669',
+            weight: 2,
+            fillColor: '#10b981',
+            fillOpacity: .12
+        };
+        async function initMap() {
+            if (map) {
+                map.invalidateSize();
+                mapRefresh();
+                return
             }
-            map.invalidateSize()
+            map = L.map('map').setView([-1.9, 113.2], 8);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            map.on('click', e => pilih(e.latlng.lat, e.latlng.lng, true));
+            try {
+                GJ = GJ || (await fetch(API + '?action=geojson').then(r => r.json())).geojson
+            } catch (e) {}
+            if (GJ) {
+                POL = L.geoJSON(GJ, {
+                    filter: f => inS(f.properties.kecamatan, f.properties.desa),
+                    style: polStyle,
+                    onEachFeature: (f, l) => l.bindTooltip(f.properties.desa + ' · Kec. ' + f.properties.kecamatan, {
+                        sticky: true
+                    })
+                }).addTo(map);
+                if (ME.r !== 'admin' && POL.getBounds().isValid()) map.fitBounds(POL.getBounds())
+            }
+            HSL = L.layerGroup().addTo(map);
+            map.invalidateSize();
+            mapRefresh();
+            hl()
+        }
+
+        function hl() {
+            if (!POL) return;
+            const k = $('f-kec').value,
+                d = $('f-desa').value;
+            POL.eachLayer(l => {
+                const p = l.feature.properties;
+                l.setStyle(p.kecamatan === k && p.desa === d ? {
+                    color: '#ea580c',
+                    weight: 3,
+                    fillColor: '#fb923c',
+                    fillOpacity: .3
+                } : polStyle())
+            })
+        }
+
+        function mapRefresh() {
+            if (!HSL) return;
+            HSL.clearLayers();
+            const done = {};
+            LAP.forEach(r => {
+                if (r.Ref) done[r.Ref] = r.No
+            });
+            HSA.slice(0, 800).forEach((h, i) => {
+                const no = done[refOf(h)],
+                    col = no ? '#94a3b8' : (h.confidence >= 80 ? '#dc2626' : '#f59e0b');
+                L.circleMarker([h.latitude, h.longitude], {
+                    radius: 8,
+                    fillColor: col,
+                    color: '#fff',
+                    weight: 2,
+                    fillOpacity: .95
+                }).addTo(HSL).bindPopup(
+                    `<div style="min-width:190px;font-size:12px;line-height:1.5"><b>${esc(h.village)}</b>, Kec. ${esc(h.kecamatan)}<br>${esc(h.time)}<br>Confidence ${h.confidence}% · FRP ${h.frp} MW · ${esc(h.satellite)}<br>` +
+                    (no ? `<span style="color:#64748b">Sudah dilaporkan: ${esc(no)}</span>` : `<button class="btn" style="margin-top:6px" onclick="buatDari(${i})"><i data-lucide="file-plus" class="w-4 h-4"></i>Buat Laporan</button>`) + '</div>')
+            })
+        }
+
+        function buatDari(i) {
+            const h = HSA[i];
+            if (!h) return;
+            map.closePopup();
+            isiHotspot(h);
+            setTimeout(() => $('f-jenis').scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            }), 350)
         }
         async function pilih(lat, lng, deteksi) {
             $('f-lat').value = (+lat).toFixed(6);
@@ -696,7 +911,8 @@
                     if (!inS(j.hasil.kecamatan, j.hasil.desa)) return alert('Titik berada di luar wilayah tugas Anda (' + j.hasil.desa + ', ' + j.hasil.kecamatan + ').');
                     $('f-kec').value = j.hasil.kecamatan;
                     isiDesa(j.hasil.desa)
-                } else alert('Titik berada di luar Kabupaten Katingan.')
+                } else alert('Titik berada di luar Kabupaten Katingan.');
+                hl()
             }
         }
 
@@ -710,7 +926,8 @@
                 $('f-kec').value = x.kecamatan;
                 isiDesa(x.village)
             }
-            setTimeout(() => pilih(x.latitude, x.longitude, false), 100)
+            setTimeout(() => pilih(x.latitude, x.longitude, false), 100);
+            setTimeout(hl, 250)
         }
         $('rs').onclick = () => {
             $('fb').reset();
@@ -767,7 +984,10 @@
             $('f-kondisi').value = x.Kondisi;
             $('f-pelapor').value = x.Pelapor;
             $('f-ket').value = x.Keterangan;
-            setTimeout(() => pilih(x.Lat, x.Lng, false), 150)
+            setTimeout(() => {
+                pilih(x.Lat, x.Lng, false);
+                hl()
+            }, 150)
         }
 
         // ---- PDF (cetak -> simpan sebagai PDF) ----
@@ -934,7 +1154,6 @@
             })
         }
     </script>
-    
 </body>
 
 </html>
