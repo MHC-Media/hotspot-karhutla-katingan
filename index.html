@@ -7805,6 +7805,7 @@
                 let formattedTime = formatSatelliteTime(rawTime);
 
                 let hObj = {
+                    rawTime: String(rawTime),
                     lat: lat,
                     lng: lng,
                     village: item.village || "-",
@@ -7907,7 +7908,7 @@
                         `<div class="flex items-center justify-between pt-2.5 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700">` +
                         `<span class="text-[10px] text-slate-400 font-mono">${h.lat.toFixed(5)}, ${h.lng.toFixed(5)}</span>` +
                         `</div>` +
-                        `<a href="admin.html?buat=1&lat=${h.lat}&lng=${h.lng}&desa=${encodeURIComponent(h.village)}&kec=${encodeURIComponent(h.kecamatan)}&time=${encodeURIComponent(h.time)}" style="color:#fff" class="flex items-center justify-center w-full bg-red-600 hover:bg-red-700 text-xs font-bold py-2.5 rounded-xl mb-2"><i data-lucide="file-plus" class="w-4 h-4 mr-1.5"></i>Buat Laporan</a>` +
+                        `<a href="admin.html?buat=1&lat=${h.lat}&lng=${h.lng}&desa=${encodeURIComponent(h.village)}&kec=${encodeURIComponent(h.kecamatan)}&time=${encodeURIComponent(h.rawTime||h.time)}" style="color:#fff" class="flex items-center justify-center w-full bg-red-600 hover:bg-red-700 text-xs font-bold py-2.5 rounded-xl mb-2"><i data-lucide="file-plus" class="w-4 h-4 mr-1.5"></i>Buat Laporan</a>` +
                         `<a href="${routeUrl}" target="_blank" ` +
                         `class="flex items-center justify-center gap-1.5 w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition-colors shadow-sm">` +
                         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>` +
@@ -8266,6 +8267,98 @@
                 });
                 return o
             };
+            // Kalender tanggal berbahasa Indonesia (menggantikan pemilih tanggal bawaan browser yang mengikuti bahasa perangkat)
+            function idDP(id, opt) {
+                const el = document.getElementById(id);
+                if (!el || el._dp) return;
+                el._dp = 1;
+                const p2 = v => String(v).padStart(2, '0');
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = el.className + ' text-left inline-flex items-center gap-2';
+                b.style.width = 'auto';
+                b.style.minWidth = '14rem';
+                el.style.display = 'none';
+                el.parentNode.insertBefore(b, el);
+                const lab = () => {
+                    b.innerHTML = '<i data-lucide="calendar" class="w-4 h-4 shrink-0"></i><span>' + (el.value ? fmtTgl(el.value) : 'Pilih tanggal') + '</span>'
+                };
+                el._sync = lab;
+                lab();
+                let pop = null,
+                    vy, vm;
+                const close = () => {
+                    pop && pop.remove();
+                    pop = null
+                };
+                const draw = () => {
+                    const off = (new Date(vy, vm, 1).getDay() + 6) % 7,
+                        dim = new Date(vy, vm + 1, 0).getDate(),
+                        sel = el.value,
+                        td = iso(new Date());
+                    let h = `<div class="flex items-center justify-between mb-2"><button type="button" data-n="-1" class="px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-bold">‹</button><b class="text-sm">${BLN[vm]} ${vy}</b><button type="button" data-n="1" class="px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-bold">›</button></div><div class="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400 mb-1">${['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map(d=>`<span>${d}</span>`).join('')}</div><div class="grid grid-cols-7 gap-0.5 text-center text-xs">`;
+                    for (let i = 0; i < off; i++) h += '<span></span>';
+                    for (let d = 1; d <= dim; d++) {
+                        const s = vy + '-' + p2(vm + 1) + '-' + p2(d);
+                        h += `<button type="button" data-d="${s}" class="h-8 rounded-lg ${s===sel?'bg-emerald-600 text-white font-bold':s===td?'ring-1 ring-emerald-500 text-emerald-600 font-bold':'hover:bg-slate-100 dark:hover:bg-slate-800'}">${d}</button>`
+                    }
+                    h += `</div><div class="flex justify-between mt-2 text-xs font-bold"><button type="button" data-d="${td}" class="text-emerald-600">Hari Ini</button>${opt&&opt.clear?'<button type="button" data-d="" class="text-slate-500">Hapus</button>':''}</div>`;
+                    pop.innerHTML = h
+                };
+                b.onclick = e => {
+                    e.stopPropagation();
+                    if (pop) return close();
+                    const d = pd(el.value) || new Date();
+                    vy = d.getFullYear();
+                    vm = d.getMonth();
+                    pop = document.createElement('div');
+                    pop.className = 'fixed w-64 p-3 rounded-2xl shadow-2xl border border-slate-200 bg-white text-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700';
+                    pop.style.zIndex = 4000;
+                    const r = b.getBoundingClientRect();
+                    pop.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - 330)) + 'px';
+                    pop.style.left = Math.max(8, Math.min(r.left, innerWidth - 270)) + 'px';
+                    pop.onclick = ev => {
+                        ev.stopPropagation();
+                        const t = ev.target.closest('button');
+                        if (!t) return;
+                        if (t.dataset.n) {
+                            vm += +t.dataset.n;
+                            if (vm < 0) {
+                                vm = 11;
+                                vy--
+                            }
+                            if (vm > 11) {
+                                vm = 0;
+                                vy++
+                            }
+                            draw()
+                        } else if ('d' in t.dataset) {
+                            el.value = t.dataset.d;
+                            lab();
+                            close();
+                            el.dispatchEvent(new Event('change'))
+                        }
+                    };
+                    document.body.appendChild(pop);
+                    draw()
+                };
+                document.addEventListener('click', close)
+            }
+
+            // Riwayat status: alur 6 tahap berbentuk timeline vertikal
+            function tl(riw, now, oleh) {
+                return '<div>' + ST.map((s, i) => {
+                    const es = riw.filter(r => r.ke === s),
+                        on = es.length > 0,
+                        cur = s === now,
+                        col = WR[i],
+                        nx = i < 5 && riw.some(r => r.ke === ST[i + 1]);
+                    return `<div class="flex gap-3"><div class="flex flex-col items-center"><div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0" style="background:${on?col:'#cbd5e1'};${cur?`box-shadow:0 0 0 4px ${col}33`:''}">${on?'<i data-lucide="check" class="w-4 h-4"></i>':i+1}</div>${i<5?`<div class="w-0.5 flex-1 min-h-[22px]" style="background:${nx?col:'#e2e8f0'}"></div>`:''}</div>
+   <div class="pb-4 flex-1 min-w-0"><div class="flex flex-wrap items-center gap-2"><b class="text-xs ${on?'':'text-slate-400'}">${s}</b>${cur?`<span class="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style="background:${col}">Status saat ini</span>`:''}</div>
+   ${es.length?es.map(r=>`<div class="text-[11px] text-slate-500 mt-0.5">${E(fmtTJ(r.waktu))}${oleh&&r.oleh?' · oleh <b>'+E(r.oleh)+'</b>':''}</div>${r.catatan?`<div class="text-xs mt-1 rounded-lg px-2.5 py-1.5 bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700">${E(r.catatan)}</div>`:''}`).join(''):'<div class="text-[11px] text-slate-400">Belum dilalui</div>'}</div></div>`
+                }).join('') + '</div>'
+            }
+
             let D = [],
                 RWD = '';
             const kartu = x => {
@@ -8285,6 +8378,7 @@
                     RWD = (ds0.includes(t) || !ds0.length) ? t : ds0[ds0.length - 1]
                 }
                 q('rw-d').value = RWD;
+                q('rw-d')._sync && q('rw-d')._sync();
                 const day = D.filter(x => x.tgl.slice(0, 10) === RWD).sort((p, r) => r.tgl.localeCompare(p.tgl));
                 const lim = iso(new Date(Date.now() - 60 * 864e5)),
                     rec = D.filter(x => x.tgl.slice(0, 10) >= lim),
@@ -8319,6 +8413,7 @@
                 }
             };
             q('rw-c').onclick = () => cetak();
+            idDP('rw-d');
             window.rwDetail = no => {
                 const x = D.find(r => r.no === no);
                 if (!x) return;
@@ -8326,7 +8421,7 @@
   <div class="grid grid-cols-2 gap-2 text-xs">${[['Tanggal kejadian',fmtTJ(x.tgl)],['Sumber',x.sumber],['Lokasi',x.desa+', Kec. '+x.kec],['Koordinat',x.lat+', '+x.lng],['Jenis',x.jenis],['Perkiraan luas',(x.luas||'-')+' ha'],['Kondisi',x.kondisi],['Pelapor',x.pelapor]].map(a=>`<div><div class="text-[10px] font-bold uppercase text-slate-500">${a[0]}</div>${E(a[1])}</div>`).join('')}</div>
   <p class="text-xs"><b>Keterangan:</b> ${E(x.ket)||'-'}</p>${x.tl?`<p class="text-xs"><b>Tindak lanjut:</b> ${E(x.tl)}</p>`:''}
   <div class="flex flex-wrap gap-2">${x.foto.map(f=>`<a target="_blank" href="${img(f,1600)}"><img src="${img(f,300)}" class="h-24 rounded-lg border"></a>`).join('')}</div>
-  <div><div class="text-[10px] font-bold uppercase text-slate-500 mb-1">Riwayat status</div><ol class="text-xs space-y-1 border-l-2 border-emerald-500 pl-3">${x.riw.map(r=>`<li><b>${E(r.ke)}</b> · ${E(fmtTJ(r.waktu))}${r.catatan?`<br><span class="text-slate-500">${E(r.catatan)}</span>`:''}</li>`).join('')}</ol></div>`;
+  <div><div class="text-[10px] font-bold uppercase text-slate-500 mb-2">Riwayat status</div>${tl(x.riw,x.status,false)}</div>`;
                 q('rw-modal').classList.remove('hidden')
             };
             // ---- PDF tanggal terpilih ----
@@ -8345,7 +8440,7 @@
   table{border-collapse:collapse;width:100%;font-size:9.5px}th{background:#065f46;color:#fff;text-align:left;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #e2e8f0;vertical-align:top}tr:nth-child(even) td{background:#f8fafc}
   .cd{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:9px;page-break-inside:avoid}.cd .t{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}.bd{color:#fff;border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700}
   .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;font-size:9.5px}.kv small{display:block;color:#64748b;font-size:8px;text-transform:uppercase;font-weight:700}
-  .tl{margin:6px 0 0;padding-left:12px;border-left:2px solid #10b981;font-size:9px;color:#334155}.tl div{margin-bottom:2px}
+  .tl{margin:7px 0 0;font-size:9px;color:#334155;border-top:1px dashed #cbd5e1;padding-top:5px}.tl div{display:flex;gap:6px;align-items:baseline;margin-bottom:2px}.tl i{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block}
   .ph{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}.ph img{width:100%;height:105px;object-fit:cover;border-radius:8px}
   .ttd{margin-top:22px;margin-left:auto;width:210px;text-align:center;page-break-inside:avoid}.ft{margin-top:14px;color:#94a3b8;font-size:8.5px;text-align:center}`;
 
@@ -8378,7 +8473,7 @@
   <h2 style="page-break-before:always">Rincian Laporan</h2>${l.map(x=>`<div class="cd"><div class="t"><b>${E(x.no)}</b><span class="bd" style="background:${WR[ST.indexOf(x.status)]||'#64748b'}">${E(x.status)}</span></div>
    <div class="kv"><div><small>Tanggal kejadian</small>${E(fmtTJ(x.tgl))}</div><div><small>Lokasi</small>${E(x.desa)}, ${E(x.kec)}</div><div><small>Koordinat</small>${E(x.lat)}, ${E(x.lng)}</div><div><small>Jenis</small>${E(x.jenis)}</div><div><small>Luas / Kondisi</small>${E(x.luas||'-')} ha · ${E(x.kondisi)}</div><div><small>Sumber / Pelapor</small>${E(x.sumber)} · ${E(x.pelapor)}</div></div>
    <p style="margin:6px 0 0"><b>Keterangan:</b> ${E(x.ket)||'-'}<br><b>Tindak lanjut:</b> ${E(x.tl)||'-'}</p>
-   <div class="tl">${x.riw.map(r=>`<div><b>${E(r.ke)}</b> · ${E(fmtTJ(r.waktu))}${r.catatan?' — '+E(r.catatan):''}</div>`).join('')}</div>
+   <div class="tl">${x.riw.map(r=>`<div><i style="background:${WR[ST.indexOf(r.ke)]||'#64748b'}"></i><span><b>${E(r.ke)}</b> · ${E(fmtTJ(r.waktu))}${r.catatan?' — '+E(r.catatan):''}</span></div>`).join('')}</div>
    ${x.foto.length?'<div class="ph">'+x.foto.slice(0,6).map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
   <div class="ttd">Katingan, ${E(fmtTgl(iso(nd)))}<br>Petugas<br><br><br><br>(................................)</div><div class="ft">Dokumen dihasilkan otomatis oleh Sistem Hotspot Terpadu Karhutla Kabupaten Katingan</div></body></html>`;
                 const w = window.open('', '_blank');
