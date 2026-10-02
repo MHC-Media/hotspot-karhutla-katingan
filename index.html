@@ -409,6 +409,33 @@
             });
         }
 
+
+        // Format tanggal Indonesia: "Jumat, 02 Oktober 2026" (dipakai di seluruh tampilan)
+        const NAMA_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        function fmtTglID(isoStr) {
+            const m = /(\d{4})-(\d{2})-(\d{2})/.exec(isoStr || '');
+            if (!m) return isoStr || '';
+            const d = new Date(+m[1], +m[2] - 1, +m[3]);
+            return NAMA_HARI[d.getDay()] + ', ' + m[3] + ' ' + NAMA_BULAN[d.getMonth()] + ' ' + m[1];
+        }
+        // "2026-10-02 08:15 WIB" -> "Jumat, 02 Oktober 2026 · 08.15 WIB"
+        function fmtWaktuHotspot(s) {
+            const m = /(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(s || '');
+            return m ? fmtTglID(m[1]) + ' · ' + m[2] + '.' + m[3] + ' WIB' : (s || '');
+        }
+        // Waktu dari spreadsheet kadang berupa teks tanggal bawaan sistem ("Fri Oct 02 2026 08:15:00 GMT+0700"); disamakan ke "YYYY-MM-DD HH:MM" (WIB)
+        function normalisasiWaktu(s) {
+            s = String(s || '');
+            if (/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(s) || s === '-' || !s) return s;
+            const t = Date.parse(s.replace(/ WIB$/, ''));
+            if (isNaN(t)) return s;
+            const d = new Date(t + 7 * 3600 * 1000),
+                p = v => String(v).padStart(2, '0');
+            return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes());
+        }
+
         // Mengubah string waktu hotspot "YYYY-MM-DD HH:MM WIB" menjadi epoch UTC
         // yang valid, supaya bisa dibandingkan akurat dengan waktu saat ini
         // untuk filter "24 Jam Terakhir".
@@ -7365,6 +7392,7 @@
         // Fungsi helper untuk memformat waktu satelit ke format bahasa Indonesia + "WIB"
         function formatSatelliteTime(timeStr) {
             if (!timeStr || timeStr === "-") return "-";
+            timeStr = normalisasiWaktu(timeStr);
 
             const daysMap = {
                 'Sun': 'Minggu',
@@ -7443,7 +7471,7 @@
             let routeUrl = `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}`;
             return `
                 <tr class="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800">
-                    <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">${esc(h.time)}</td>
+                    <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">${esc(fmtWaktuHotspot(h.time))}</td>
                     <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${esc(h.village)}</td>
                     <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${esc(h.kecamatan)}</td>
                     <td class="py-3 px-4 text-slate-700 font-semibold dark:text-slate-300">
@@ -7674,7 +7702,7 @@
                         },
                         tooltip: {
                             callbacks: {
-                                title: (items) => dates[items[0].dataIndex],
+                                title: (items) => fmtTglID(dates[items[0].dataIndex]),
                                 label: (item) => ` ${item.parsed.y} titik hotspot`
                             }
                         }
@@ -7903,7 +7931,7 @@
                         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` +
                         `Waktu` +
                         `</span>` +
-                        `<span class="text-slate-800 font-bold text-right dark:text-slate-100">${esc(h.time)}</span>` +
+                        `<span class="text-slate-800 font-bold text-right dark:text-slate-100">${esc(fmtWaktuHotspot(h.time))}</span>` +
                         `</div>` +
                         `<div class="flex items-center justify-between pt-2.5 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700">` +
                         `<span class="text-[10px] text-slate-400 font-mono">${h.lat.toFixed(5)}, ${h.lng.toFixed(5)}</span>` +
@@ -7950,7 +7978,7 @@
             const timeString = now.toLocaleDateString('id-ID', {
                 weekday: 'long',
                 day: '2-digit',
-                month: 'short',
+                month: 'long',
                 year: 'numeric',
                 timeZone: 'Asia/Jakarta'
             }) + ' ' + now.toLocaleTimeString('id-ID', {
@@ -7968,8 +7996,9 @@
             if (lastSatelliteUpdate) {
                 const pullDate = new Date(lastSatelliteUpdate);
                 pullEl.textContent = pullDate.toLocaleDateString('id-ID', {
+                    weekday: 'long',
                     day: '2-digit',
-                    month: 'short',
+                    month: 'long',
                     year: 'numeric',
                     timeZone: 'Asia/Jakarta'
                 }) + ' ' + pullDate.toLocaleTimeString('id-ID', {
@@ -8009,7 +8038,7 @@
                 message += `   • Satelit: ${h.satellite}\n`;
                 message += `   • Confidence: ${h.confidence}%\n`;
                 message += `   • FRP: ${h.frp} MW\n`;
-                message += `   • Waktu Satelit: ${h.time}\n`;
+                message += `   • Waktu Satelit: ${fmtWaktuHotspot(h.time)}\n`;
                 message += `   • Lokasi: ${mapsLink}\n\n`;
             });
 
@@ -8247,7 +8276,7 @@
             };
             const fmtTgl = s => {
                 const d = pd(s);
-                return d ? `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}` : (s || '')
+                return d ? `${HARI[d.getDay()]}, ${String(d.getDate()).padStart(2,'0')} ${BLN[d.getMonth()]} ${d.getFullYear()}` : (s || '')
             };
             const fmtJam = s => {
                 const m = /[T ](\d{2}):(\d{2})/.exec(s || '');
