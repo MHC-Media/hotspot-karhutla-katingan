@@ -328,10 +328,26 @@
     <section id="laporan-publik" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
         <h2 class="font-extrabold text-lg mb-1"><i data-lucide="flame" class="w-5 h-5 inline -mt-1 mr-1.5 text-red-500"></i>Statistik Laporan Karhutla</h2>
         <div id="lp-stat"></div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 overflow-x-auto mt-3 dark:bg-slate-900 dark:border-slate-700"><b class="text-sm">Laporan Terbaru</b>
-            <table class="w-full text-xs mt-2">
-                <tbody id="lp-rows"></tbody>
-            </table>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 mt-3 shadow-sm space-y-3 dark:bg-slate-900 dark:border-slate-700">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 class="font-extrabold text-lg">Riwayat Laporan Kegiatan</h3>
+                    <div id="rw-sub" class="text-xs text-slate-500 dark:text-slate-400"></div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="rw-p" title="Hari sebelumnya" class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 inline-flex items-center justify-center dark:bg-slate-800 dark:border-slate-700"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <input id="rw-d" type="date" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 dark:border-slate-700">
+                    <button id="rw-n" title="Hari berikutnya" class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 inline-flex items-center justify-center dark:bg-slate-800 dark:border-slate-700"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    <button id="rw-t" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl">Hari Ini</button>
+                    <button id="rw-c" class="bg-amber-400 hover:bg-amber-500 text-slate-900 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak PDF Tanggal Ini</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 text-xs"><span class="text-slate-500 mr-1 dark:text-slate-400">Tanggal ada laporan:</span><span id="rw-chips" class="flex flex-wrap gap-1.5"></span></div>
+            <div id="rw-list" class="grid md:grid-cols-2 gap-4"></div>
+            <div id="rw-ft" class="text-xs text-slate-400"></div>
+        </div>
+        <div id="rw-modal" class="hidden fixed inset-0 z-[3000] bg-black/50 overflow-auto p-4">
+            <div id="rw-mb" class="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl mx-auto p-5 space-y-3"></div>
         </div>
     </section>
 
@@ -8214,13 +8230,14 @@
     </script>
     <script>
         (function() {
-            const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            } [c]));
+            const q = id => document.getElementById(id),
+                E = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                } [c]));
             const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
                 BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
             const pd = s => {
@@ -8230,23 +8247,155 @@
             const fmtTgl = s => {
                 const d = pd(s);
                 return d ? `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}` : (s || '')
-            }; // Sabtu, 26 September 2026
+            };
             const fmtJam = s => {
                 const m = /[T ](\d{2}):(\d{2})/.exec(s || '');
                 return m ? m[1] + '.' + m[2] + ' WIB' : ''
             };
             const fmtTJ = s => fmtTgl(s) + (fmtJam(s) ? ' · ' + fmtJam(s) : '');
             const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const ST = ['LAPORAN MASUK', 'BELUM DIVERIFIKASI', 'DALAM VERIFIKASI', 'TERVERIFIKASI', 'DITINDAKLANJUTI', 'SELESAI'],
+                WR = ['#64748b', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#059669'];
+            const badge = s => `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white whitespace-nowrap" style="background:${WR[ST.indexOf(s)]||'#64748b'}">${E(s)}</span>`;
+            const img = (id, w) => `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${w}`;
+            const cnt = (l, f) => {
+                const o = {};
+                l.forEach(x => {
+                    const k = f(x);
+                    if (k) o[k] = (o[k] || 0) + 1
+                });
+                return o
+            };
+            let D = [],
+                RWD = '';
+            const kartu = x => {
+                const f = x.foto[0];
+                return `<div class="border border-slate-200 rounded-2xl p-4 flex flex-col gap-2 dark:border-slate-700"><div class="flex justify-between items-start gap-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">${E(x.sumber)}</span><span class="text-[11px] text-slate-400 text-right">${E(fmtTJ(x.tgl))}</span></div>
+  <div class="text-sm"><b>${E(x.desa)}</b>, Kec. ${E(x.kec)} • <span class="text-slate-500 dark:text-slate-400">${E(x.pelapor)}</span></div>
+  <div class="flex flex-wrap gap-1.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">${E(x.jenis)}</span>${badge(x.status)}</div>
+  ${f?`<a href="${img(f,1600)}" target="_blank" class="relative block"><img loading="lazy" src="${img(f,800)}" class="w-full h-52 object-cover rounded-xl border border-slate-200 dark:border-slate-700">${x.foto.length>1?`<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">+${x.foto.length-1} foto</span>`:''}</a>`:''}
+  <p class="text-sm">${E(x.ket)||'<span class="text-slate-400">Tanpa keterangan</span>'}</p>${x.tl?`<p class="text-xs text-slate-500 dark:text-slate-400"><b>Tindak lanjut:</b> ${E(x.tl)}</p>`:''}
+  <div class="flex items-center justify-between mt-auto pt-1 gap-2"><code class="text-[10px] text-slate-400">${E(x.lat)}, ${E(x.lng)}</code><div class="flex gap-1.5"><button onclick="rwDetail('${E(x.no)}')" class="bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Detail</button><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=${E(x.lat)},${E(x.lng)}" class="text-white text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#064e3b">Google Maps</a></div></div></div>`
+            };
+
+            function render() {
+                const ds0 = [...new Set(D.map(x => x.tgl.slice(0, 10)))].sort();
+                if (!RWD) {
+                    const t = iso(new Date());
+                    RWD = (ds0.includes(t) || !ds0.length) ? t : ds0[ds0.length - 1]
+                }
+                q('rw-d').value = RWD;
+                const day = D.filter(x => x.tgl.slice(0, 10) === RWD).sort((p, r) => r.tgl.localeCompare(p.tgl));
+                const lim = iso(new Date(Date.now() - 60 * 864e5)),
+                    rec = D.filter(x => x.tgl.slice(0, 10) >= lim),
+                    by = cnt(rec, x => x.tgl.slice(0, 10)),
+                    ds = Object.keys(by).sort().reverse();
+                q('rw-sub').textContent = `${fmtTgl(RWD)} • ${day.length} laporan`;
+                q('rw-chips').innerHTML = ds.map(d => `<button data-d="${d}" class="px-3 py-1 rounded-full text-xs font-bold border ${d===RWD?'bg-emerald-600 text-white border-emerald-600':'bg-white text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'}">${d.slice(8)}/${d.slice(5,7)} (${by[d]})</button>`).join('') || '<span class="text-slate-400">Belum ada.</span>';
+                q('rw-list').innerHTML = day.map(kartu).join('') || '<div class="md:col-span-2 text-center text-sm text-slate-400 py-10">Tidak ada laporan pada tanggal ini.</div>';
+                q('rw-ft').textContent = rec.length ? `Total ${rec.length} laporan (60 hari terakhir) • terlama: ${fmtTgl(ds[ds.length-1])}, terbaru: ${fmtTgl(ds[0])}.` : 'Belum ada laporan dalam 60 hari terakhir.'
+            }
+            const geser = n => {
+                const d = pd(RWD);
+                d.setDate(d.getDate() + n);
+                RWD = iso(d);
+                render()
+            };
+            q('rw-p').onclick = () => geser(-1);
+            q('rw-n').onclick = () => geser(1);
+            q('rw-t').onclick = () => {
+                RWD = iso(new Date());
+                render()
+            };
+            q('rw-d').onchange = () => {
+                RWD = q('rw-d').value || RWD;
+                render()
+            };
+            q('rw-chips').onclick = e => {
+                const b = e.target.closest('[data-d]');
+                if (b) {
+                    RWD = b.dataset.d;
+                    render()
+                }
+            };
+            q('rw-c').onclick = () => cetak();
+            window.rwDetail = no => {
+                const x = D.find(r => r.no === no);
+                if (!x) return;
+                q('rw-mb').innerHTML = `<div class="flex justify-between items-start"><div><div class="font-mono font-bold">${E(x.no)}</div>${badge(x.status)}</div><button onclick="document.getElementById('rw-modal').classList.add('hidden')" class="bg-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Tutup</button></div>
+  <div class="grid grid-cols-2 gap-2 text-xs">${[['Tanggal kejadian',fmtTJ(x.tgl)],['Sumber',x.sumber],['Lokasi',x.desa+', Kec. '+x.kec],['Koordinat',x.lat+', '+x.lng],['Jenis',x.jenis],['Perkiraan luas',(x.luas||'-')+' ha'],['Kondisi',x.kondisi],['Pelapor',x.pelapor]].map(a=>`<div><div class="text-[10px] font-bold uppercase text-slate-500">${a[0]}</div>${E(a[1])}</div>`).join('')}</div>
+  <p class="text-xs"><b>Keterangan:</b> ${E(x.ket)||'-'}</p>${x.tl?`<p class="text-xs"><b>Tindak lanjut:</b> ${E(x.tl)}</p>`:''}
+  <div class="flex flex-wrap gap-2">${x.foto.map(f=>`<a target="_blank" href="${img(f,1600)}"><img src="${img(f,300)}" class="h-24 rounded-lg border"></a>`).join('')}</div>
+  <div><div class="text-[10px] font-bold uppercase text-slate-500 mb-1">Riwayat status</div><ol class="text-xs space-y-1 border-l-2 border-emerald-500 pl-3">${x.riw.map(r=>`<li><b>${E(r.ke)}</b> · ${E(fmtTJ(r.waktu))}${r.catatan?`<br><span class="text-slate-500">${E(r.catatan)}</span>`:''}</li>`).join('')}</ol></div>`;
+                q('rw-modal').classList.remove('hidden')
+            };
+            // ---- PDF tanggal terpilih ----
+            const PDFCSS = `@page{size:A4;margin:12mm 12mm 16mm;@bottom-center{content:"Halaman " counter(page) " dari " counter(pages);font:9px Arial;color:#64748b}}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font:11px/1.45 "Segoe UI",Arial,sans-serif;color:#0f172a;margin:0}
+  .hd{background:linear-gradient(135deg,#065f46,#0d9488);color:#fff;border-radius:14px;padding:18px 20px;display:flex;gap:14px;align-items:center}
+  .lg{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px}
+  .hd h1{margin:0;font-size:17px;letter-spacing:.3px}.hd p{margin:2px 0 0;opacity:.85;font-size:10.5px}
+  .meta{display:flex;gap:8px;margin:10px 0}.meta div{flex:1;background:#f1f5f9;border-radius:10px;padding:7px 10px}.meta small{display:block;color:#64748b;font-size:8.5px;text-transform:uppercase;font-weight:700}
+  h2{font-size:12.5px;margin:16px 0 7px;padding-left:8px;border-left:4px solid #059669}
+  .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.kp div{border-radius:12px;padding:10px;border:1px solid #e2e8f0}.kp b{display:block;font-size:22px;line-height:1.1}.kp small{color:#64748b;font-size:9px;font-weight:700;text-transform:uppercase}
+  .st{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}.st div{text-align:center;border-radius:10px;padding:7px 3px;color:#fff}.st b{font-size:17px;display:block}.st small{font-size:7.5px;font-weight:700}
+  .stk{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#e2e8f0;margin-top:8px}.stk i{display:block}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.br{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:10px}.br span{width:34%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tr{flex:1;height:8px;background:#e2e8f0;border-radius:4px}.tr i{display:block;height:8px;border-radius:4px}
+  .tn{display:flex;align-items:flex-end;gap:3px;height:70px;border-bottom:1px solid #cbd5e1}.tn div{flex:1;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:flex-end}.tn i{display:block;background:linear-gradient(#10b981,#059669);border-radius:3px 3px 0 0}.tn small{font-size:6.5px;color:#64748b;margin-top:2px}
+  table{border-collapse:collapse;width:100%;font-size:9.5px}th{background:#065f46;color:#fff;text-align:left;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #e2e8f0;vertical-align:top}tr:nth-child(even) td{background:#f8fafc}
+  .cd{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:9px;page-break-inside:avoid}.cd .t{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}.bd{color:#fff;border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;font-size:9.5px}.kv small{display:block;color:#64748b;font-size:8px;text-transform:uppercase;font-weight:700}
+  .tl{margin:6px 0 0;padding-left:12px;border-left:2px solid #10b981;font-size:9px;color:#334155}.tl div{margin-bottom:2px}
+  .ph{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}.ph img{width:100%;height:105px;object-fit:cover;border-radius:8px}
+  .ttd{margin-top:22px;margin-left:auto;width:210px;text-align:center;page-break-inside:avoid}.ft{margin-top:14px;color:#94a3b8;font-size:8.5px;text-align:center}`;
+
+            function cetak() {
+                const l = D.filter(x => x.tgl.slice(0, 10) === RWD).sort((p, r) => p.tgl.localeCompare(r.tgl));
+                if (!l.length) return alert('Tidak ada laporan pada tanggal ini.');
+                const n = l.length,
+                    c = cnt(l, x => x.status),
+                    luas = l.reduce((t, x) => t + (parseFloat(x.luas) || 0), 0),
+                    done = c[ST[5]] || 0,
+                    perlu = (c[ST[0]] || 0) + (c[ST[1]] || 0),
+                    P = v => Math.round(v * 100 / n),
+                    p2 = v => String(v).padStart(2, '0'),
+                    nd = new Date(),
+                    nowS = fmtTgl(iso(nd)) + ', ' + p2(nd.getHours()) + '.' + p2(nd.getMinutes()) + ' WIB';
+                const bars = (o, col) => {
+                    const e = Object.entries(o).sort((p, r) => r[1] - p[1]).slice(0, 8),
+                        mx = e[0] ? e[0][1] : 1;
+                    return e.map(x => `<div class="br"><span>${E(x[0])}</span><div class="tr"><i style="width:${x[1]*100/mx}%;background:${col}"></i></div><b>${x[1]}</b></div>`).join('')
+                };
+                const html = `<html><head><meta charset="utf-8"><title>Laporan Karhutla ${E(fmtTgl(RWD))}</title><style>${PDFCSS}</style></head><body>
+  <div class="hd"><div class="lg">HK</div><div><h1>LAPORAN KEJADIAN KEBAKARAN HUTAN DAN LAHAN</h1><p>Hotspot Terpadu Karhutla · Kabupaten Katingan</p></div></div>
+  <div class="meta"><div><small>Wilayah</small><b>Seluruh Kabupaten Katingan</b></div><div><small>Tanggal</small><b>${E(fmtTgl(RWD))}</b></div><div><small>Jumlah laporan</small><b>${n}</b></div><div><small>Dicetak</small><b>${E(nowS)}</b></div></div>
+  <h2>Ringkasan Statistik</h2>
+  <div class="kp"><div style="background:#ecfdf5"><small>Total laporan</small><b style="color:#047857">${n}</b></div><div style="background:#fffbeb"><small>Perkiraan luas (ha)</small><b style="color:#b45309">${luas.toFixed(2)}</b></div><div style="background:#eff6ff"><small>Tingkat selesai</small><b style="color:#1d4ed8">${P(done)}%</b></div><div style="background:#fef2f2"><small>Menunggu verifikasi</small><b style="color:#b91c1c">${perlu}</b></div></div>
+  <div class="st">${ST.map((x,i)=>`<div style="background:${WR[i]}"><b>${c[x]||0}</b><small>${x}</small></div>`).join('')}</div>
+  <div class="stk">${ST.map((x,i)=>c[x]?`<i style="width:${P(c[x])}%;background:${WR[i]}"></i>`:'').join('')}</div>
+  <div class="g2"><div><h2>Per Kecamatan</h2>${bars(cnt(l,x=>x.kec),'#10b981')}</div><div><h2>Per Desa/Kelurahan</h2>${bars(cnt(l,x=>x.desa),'#f59e0b')}</div><div><h2>Jenis Kejadian</h2>${bars(cnt(l,x=>x.jenis),'#3b82f6')}</div><div><h2>Kondisi Kejadian</h2>${bars(cnt(l,x=>x.kondisi),'#8b5cf6')}</div></div>
+  <h2>Rekap Laporan</h2><table><tr><th>No</th><th>Nomor</th><th>Waktu</th><th>Lokasi</th><th>Jenis</th><th>Luas</th><th>Status</th></tr>${l.map((x,i)=>`<tr><td>${i+1}</td><td>${E(x.no)}</td><td>${E(fmtJam(x.tgl))}</td><td>${E(x.desa)}, ${E(x.kec)}</td><td>${E(x.jenis)}</td><td>${E(x.luas||'-')}</td><td>${E(x.status)}</td></tr>`).join('')}</table>
+  <h2 style="page-break-before:always">Rincian Laporan</h2>${l.map(x=>`<div class="cd"><div class="t"><b>${E(x.no)}</b><span class="bd" style="background:${WR[ST.indexOf(x.status)]||'#64748b'}">${E(x.status)}</span></div>
+   <div class="kv"><div><small>Tanggal kejadian</small>${E(fmtTJ(x.tgl))}</div><div><small>Lokasi</small>${E(x.desa)}, ${E(x.kec)}</div><div><small>Koordinat</small>${E(x.lat)}, ${E(x.lng)}</div><div><small>Jenis</small>${E(x.jenis)}</div><div><small>Luas / Kondisi</small>${E(x.luas||'-')} ha · ${E(x.kondisi)}</div><div><small>Sumber / Pelapor</small>${E(x.sumber)} · ${E(x.pelapor)}</div></div>
+   <p style="margin:6px 0 0"><b>Keterangan:</b> ${E(x.ket)||'-'}<br><b>Tindak lanjut:</b> ${E(x.tl)||'-'}</p>
+   <div class="tl">${x.riw.map(r=>`<div><b>${E(r.ke)}</b> · ${E(fmtTJ(r.waktu))}${r.catatan?' — '+E(r.catatan):''}</div>`).join('')}</div>
+   ${x.foto.length?'<div class="ph">'+x.foto.slice(0,6).map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
+  <div class="ttd">Katingan, ${E(fmtTgl(iso(nd)))}<br>Petugas<br><br><br><br>(................................)</div><div class="ft">Dokumen dihasilkan otomatis oleh Sistem Hotspot Terpadu Karhutla Kabupaten Katingan</div></body></html>`;
+                const w = window.open('', '_blank');
+                if (!w) return alert('Izinkan pop-up untuk mencetak.');
+                w.document.write(html);
+                w.document.close();
+                setTimeout(() => w.print(), 2000)
+            }
             fetch(GAS_API_URL + '?action=laporan_publik', {
                 cache: 'no-store'
             }).then(r => r.json()).then(j => {
-                const l = j.daftar || [];
-                window._lpData = l;
-                renderStat('lp', l);
-                document.getElementById('lp-rows').innerHTML = l.slice(0, 10).map(x => '<tr class="border-t"><td class="py-1.5 font-mono">' + E(x.no) + '</td><td>' + E(fmtTJ(x.tgl)) + '</td><td>' + E(x.desa) + ', ' + E(x.kec) + '</td><td>' + E(x.jenis) + '</td><td><b>' + E(x.status) + '</b></td></tr>').join('') || '<tr><td class="text-slate-400 py-2">Belum ada laporan.</td></tr>';
+                D = j.daftar || [];
+                window._lpData = D;
+                renderStat('lp', D);
+                render()
             }).catch(e => console.error('Laporan publik gagal dimuat', e));
             document.getElementById('btn-theme-toggle').addEventListener('click', () => setTimeout(() => {
-                const r = document.getElementById('lp-stat');
                 if (window._lpData) renderStat('lp', window._lpData)
             }, 0));
         })();
