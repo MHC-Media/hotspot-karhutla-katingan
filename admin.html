@@ -169,12 +169,20 @@
         .dark .text-slate-500 {
             color: #94a3b8
         }
+
+        @keyframes sl {
+            to {
+                background-position: -200% 0
+            }
+        }
     </style>
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
+    <div id="bar" class="fixed top-0 left-0 right-0 h-1 transition-opacity" style="z-index:5000;opacity:0;background:linear-gradient(90deg,#10b981,#14b8a6,#10b981);background-size:200% 100%;animation:sl 1s linear infinite"></div>
+    <div id="toasts" class="fixed bottom-4 right-4 space-y-2" style="z-index:5000"></div>
     <div id="login" class="flex-1 flex items-center justify-center p-4">
         <form id="fl" autocomplete="off" class="card w-full max-w-sm space-y-3 shadow">
             <div class="text-center">
@@ -194,7 +202,7 @@
         <header class="bg-gradient-to-r from-emerald-800 to-teal-700 text-white sticky top-0 z-40 shadow-md">
             <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
                 <b class="flex items-center gap-2"><i data-lucide="flame" class="w-5 h-5 text-amber-300"></i>Admin Karhutla Katingan</b>
-                <div class="flex items-center gap-3 text-xs"><span id="who" class="hidden sm:inline"></span><button id="th" title="Tema gelap/terang" class="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 inline-flex items-center justify-center"><span id="im"><i data-lucide="moon" class="w-4 h-4"></i></span><span id="is" class="hidden"><i data-lucide="sun" class="w-4 h-4"></i></span></button><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1"><i data-lucide="log-out" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Keluar</button></div>
+                <div class="flex items-center gap-3 text-xs"><span id="who" class="hidden sm:inline"></span><button id="th" title="Tema gelap/terang" aria-label="Tema gelap/terang" class="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 inline-flex items-center justify-center"><span id="im"><i data-lucide="moon" class="w-4 h-4"></i></span><span id="is" class="hidden"><i data-lucide="sun" class="w-4 h-4"></i></span></button><a href="index.html" class="underline">Dashboard</a><button id="out" class="btn r !py-1"><i data-lucide="log-out" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Keluar</button></div>
             </div>
         </header>
         <nav id="tabs" class="bg-white border-b flex overflow-x-auto text-sm font-semibold sticky top-14 z-30"></nav>
@@ -206,6 +214,7 @@
 
             <section id="t-laporan" class="space-y-3 hidden">
                 <div class="card grid md:grid-cols-4 gap-2"><select id="fs" class="in"></select><select id="fk" class="in"></select><input id="fq" class="in md:col-span-2" placeholder="Cari no / desa / pelapor…"></div>
+                <div class="flex justify-end"><button id="ex" class="btn g"><i data-lucide="download" class="w-4 h-4"></i>Unduh CSV</button></div>
                 <div class="card overflow-x-auto">
                     <table class="w-full text-xs">
                         <thead class="text-left text-slate-500">
@@ -230,7 +239,7 @@
                             <h2 class="font-extrabold text-lg">Riwayat Laporan Kegiatan</h2>
                             <div id="rw-sub" class="text-xs text-slate-500"></div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2"><button id="rw-p" class="btn g !px-3" title="Hari sebelumnya"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><input id="rw-d" type="date" class="in !w-auto"><button id="rw-n" class="btn g !px-3" title="Hari berikutnya"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                        <div class="flex flex-wrap items-center gap-2"><button id="rw-p" class="btn g !px-3" title="Hari sebelumnya" aria-label="Hari sebelumnya"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><input id="rw-d" type="date" class="in !w-auto"><button id="rw-n" class="btn g !px-3" title="Hari berikutnya" aria-label="Hari berikutnya"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                             <button id="rw-t" class="btn">Hari Ini</button><button id="rw-c" class="btn" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><i data-lucide="printer" class="w-4 h-4"></i>Cetak PDF Tanggal Ini</button>
                         </div>
                     </div>
@@ -296,6 +305,22 @@
                 </div>
             </section>
 
+            <section id="t-log" class="hidden">
+                <div class="card overflow-x-auto">
+                    <div class="flex justify-between items-center mb-2"><b class="text-sm">Log Aktivitas (300 terbaru)</b><button class="btn g !py-1" onclick="logs()"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Muat ulang</button></div>
+                    <table class="w-full text-xs">
+                        <thead class="text-left text-slate-500">
+                            <tr>
+                                <th class="p-2">Waktu</th>
+                                <th>Pengguna</th>
+                                <th>Aksi</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lrows"></tbody>
+                    </table>
+                </div>
+            </section>
             <section id="t-user" class="hidden grid md:grid-cols-3 gap-4">
                 <div class="card md:col-span-2 overflow-x-auto">
                     <table class="w-full text-xs">
@@ -327,7 +352,7 @@
                         <div><label class="lb">Kecamatan</label><select id="u-k" class="in"></select></div>
                         <div id="u-dw"><label class="lb">Desa/Kelurahan</label><select id="u-d" class="in"></select></div>
                     </div>
-                    <div><label class="lb">Password (kosongkan jika tidak diubah)</label><input id="u-p" type="password" class="in" autocomplete="new-password"></div>
+                    <div><label class="lb">Password sementara (kosongkan jika tidak diubah; pengguna wajib menggantinya saat login)</label><input id="u-p" type="password" class="in" autocomplete="new-password"></div>
                     <label class="text-sm"><input type="checkbox" id="u-a" checked> Aktif</label><button class="btn w-full"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan Pengguna</button>
                 </form>
             </section>
@@ -7303,30 +7328,67 @@
             } [c]));
         const badge = s => `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white whitespace-nowrap" style="background:${WR[ST.indexOf(s)]||'#64748b'}">${esc(s)}</span>`;
         const img = (id, w = 600) => `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${w}`;
-        async function api(action, data = {}) {
-            const r = await fetch(API, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain'
-                },
-                body: JSON.stringify({
-                    ...data,
-                    action,
-                    token: TOK
-                })
-            });
-            const j = await r.json();
-            if (j.status !== 'success') {
-                if (/Sesi/.test(j.message || '') && action !== 'login') keluar();
-                throw new Error(j.message || 'Gagal')
-            }
-            return j
+        let BUSY = 0;
+        const bar = d => {
+            BUSY += d;
+            $('bar').style.opacity = BUSY > 0 ? 1 : 0
+        };
+
+        function toast(m, t = 'info') {
+            const e = document.createElement('div');
+            e.className = 'px-4 py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg max-w-xs ' + (t === 'error' ? 'bg-red-600' : t === 'ok' ? 'bg-emerald-600' : 'bg-slate-800');
+            e.textContent = m;
+            $('toasts').appendChild(e);
+            setTimeout(() => e.remove(), t === 'error' ? 7000 : 4000)
         }
-        const wrap = async (fn) => {
+        window.alert = m => toast(m);
+        addEventListener('unhandledrejection', e => {
+            const m = e.reason && e.reason.message;
+            toast(m || 'Terjadi kesalahan tak terduga', 'error')
+        });
+        async function api(action, data = {}) {
+            bar(1);
+            const ac = new AbortController(),
+                tm = setTimeout(() => ac.abort(), 90000);
+            try {
+                let r;
+                try {
+                    r = await fetch(API, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        },
+                        body: JSON.stringify({
+                            ...data,
+                            action,
+                            token: TOK
+                        }),
+                        signal: ac.signal
+                    })
+                } catch (e) {
+                    throw new Error(e.name === 'AbortError' ? 'Server tidak merespons (waktu habis). Coba lagi.' : 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.')
+                }
+                let j;
+                try {
+                    j = await r.json()
+                } catch (e) {
+                    throw new Error('Respons server tidak valid. Pastikan skrip Apps Script sudah di-deploy ulang (New version).')
+                }
+                if (j.status !== 'success') {
+                    if (/Sesi berakhir/.test(j.message || '') && action !== 'login') keluar('Sesi berakhir, silakan login kembali.');
+                    throw new Error(j.message || 'Terjadi kesalahan')
+                }
+                return j
+            } finally {
+                clearTimeout(tm);
+                bar(-1)
+            }
+        }
+        const wrap = async fn => {
             try {
                 await fn()
             } catch (e) {
-                alert(e.message)
+                toast(e.message, 'error')
             }
         };
 
@@ -7454,9 +7516,15 @@
             sessionStorage.setItem('kt_pre', location.search);
             history.replaceState(null, '', location.pathname)
         }
+        if (sessionStorage.getItem('kt_msg')) {
+            $('le').textContent = sessionStorage.getItem('kt_msg');
+            sessionStorage.removeItem('kt_msg')
+        }
         $('fl').onsubmit = async e => {
             e.preventDefault();
             $('le').textContent = '';
+            const sb = e.submitter;
+            sb && (sb.disabled = true);
             try {
                 const j = await api('login', {
                     username: $('lu').value,
@@ -7465,15 +7533,19 @@
                 TOK = j.token;
                 sessionStorage.setItem('kt_tok', TOK);
                 ME = j.user;
-                masuk()
+                $('lp').value = '';
+                await masuk()
             } catch (x) {
                 $('le').textContent = x.message
+            } finally {
+                sb && (sb.disabled = false)
             }
         };
-        async function keluar() {
+        async function keluar(msg) {
             const t = TOK;
             TOK = null;
             sessionStorage.clear();
+            if (typeof msg === 'string') sessionStorage.setItem('kt_msg', msg);
             try {
                 if (t) await fetch(API, {
                     method: 'POST',
@@ -7488,7 +7560,15 @@
             } catch (e) {}
             location.replace(location.pathname)
         }
-        $('out').onclick = keluar;
+        $('out').onclick = () => keluar();
+        let IDLE;
+        const idle = () => {
+            clearTimeout(IDLE);
+            if (TOK) IDLE = setTimeout(() => keluar('Anda keluar otomatis karena tidak ada aktivitas selama 30 menit.'), 30 * 60 * 1000)
+        };
+        ['click', 'keydown', 'mousemove', 'touchstart'].forEach(ev => addEventListener(ev, idle, {
+            passive: true
+        }));
 
         function ikonTema() {
             const d = document.documentElement.classList.contains('dark');
@@ -7510,8 +7590,10 @@
         })();
 
         async function masuk() {
+            idle();
             $('login').classList.add('hidden');
             $('app').classList.remove('hidden');
+            if (ME.g === '1') await paksaGanti();
             $('who').textContent = `${ME.n} (${ME.r==='admin'?'admin':'operator · '+(ME.t==='desa'?'Desa '+ME.d+', Kec. '+ME.k:'Kec. '+ME.k)})`;
             const T = [
                 ['ringkasan', 'Ringkasan', 'layout-dashboard'],
@@ -7519,13 +7601,16 @@
                 ['riwayat', 'Riwayat', 'history'],
                 ['buat', 'Buat Laporan', 'file-plus'],
                 ['pdf', 'Laporan PDF', 'file-down'], ...(ME.r === 'admin' ? [
-                    ['user', 'Pengguna', 'users']
+                    ['user', 'Pengguna', 'users'],
+                    ['log', 'Log Aktivitas', 'scroll-text']
                 ] : []), ['akun', 'Akun', 'key-round']
             ];
             $('tabs').innerHTML = T.map(t => `<button class="tab flex items-center gap-1.5" data-t="${t[0]}"><i data-lucide="${t[2]}" class="w-4 h-4 pointer-events-none"></i>${t[1]}</button>`).join('');
             $('tabs').onclick = e => e.target.dataset.t && show(e.target.dataset.t);
             const [w, h] = await Promise.all([fetch(API + '?action=wilayah').then(r => r.json()).catch(() => ({})), fetch(API).then(r => r.json()).catch(() => ({}))]);
             WIL = w.wilayah || {};
+            if (!Object.keys(WIL).length) toast('Daftar wilayah gagal dimuat. Muat ulang halaman.', 'error');
+            if (!h.data) toast('Data hotspot tidak dapat dimuat. Anda tetap dapat membuat laporan manual.', 'error');
             HSA = (h.data || []).map(x => ({
                 ...x,
                 time: normWaktu(x.time)
@@ -7548,7 +7633,11 @@
                 const x = HS[$('f-hs').value];
                 if (x) isiHotspot(x)
             };
-            await muat();
+            try {
+                await muat()
+            } catch (e) {
+                toast(e.message, 'error')
+            }
             const pre = sessionStorage.getItem('kt_pre');
             if (pre) {
                 sessionStorage.removeItem('kt_pre');
@@ -7564,6 +7653,31 @@
             } else show('ringkasan');
         }
         const inS = (k, d) => ME.r === 'admin' || (ME.t === 'desa' ? k === ME.k && d === ME.d : ME.t === 'kecamatan' && k === ME.k);
+        const kuat = p => p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.test(p);
+
+        function paksaGanti() {
+            return new Promise(res => {
+                $('mb').innerHTML = `<div class="font-extrabold text-lg">Ganti Password</div><p class="text-xs text-slate-500">Demi keamanan, Anda wajib mengganti password awal/sementara sebelum melanjutkan. Minimal 8 karakter, mengandung huruf dan angka.</p>
+ <form id="fg" class="space-y-2"><input id="g1" type="password" class="in" placeholder="Password lama" autocomplete="off" required><input id="g2" type="password" class="in" placeholder="Password baru" autocomplete="new-password" required><input id="g3" type="password" class="in" placeholder="Ulangi password baru" autocomplete="new-password" required><div class="flex gap-2"><button class="btn">Simpan</button><button type="button" id="gk" class="btn g">Keluar</button></div></form>`;
+                $('modal').classList.remove('hidden');
+                $('gk').onclick = () => keluar();
+                $('fg').onsubmit = e => {
+                    e.preventDefault();
+                    wrap(async () => {
+                        if ($('g2').value !== $('g3').value) throw new Error('Konfirmasi password tidak sama');
+                        if (!kuat($('g2').value)) throw new Error('Password minimal 8 karakter dan mengandung huruf serta angka');
+                        await api('gantiPassword', {
+                            lama: $('g1').value,
+                            baru: $('g2').value
+                        });
+                        ME.g = '';
+                        $('modal').classList.add('hidden');
+                        toast('Password berhasil diganti', 'ok');
+                        res()
+                    })
+                }
+            })
+        }
 
         function isiDesa(v) {
             const k = $('f-kec').value;
@@ -7584,6 +7698,8 @@
                 uwil();
                 users()
             }
+            if (t === 'log') wrap(logs);
+            if (t === 'buat') $('f-tgl').max = nowLocal();
             draw()
         }
 
@@ -7699,6 +7815,36 @@
             await muat()
         });
 
+        // ---- log aktivitas & ekspor ----
+        const nowLocal = () => {
+            const d = new Date(),
+                p = v => String(v).padStart(2, '0');
+            return iso(d) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes())
+        };
+        async function logs() {
+            const l = (await api('log')).data;
+            $('lrows').innerHTML = l.map(x => `<tr class="border-t"><td class="p-2 whitespace-nowrap">${esc(fmtTJ(x.Waktu))}</td><td>${esc(x.User)}</td><td><b>${esc(x.Aksi)}</b></td><td>${esc(x.Detail)}</td></tr>`).join('') || '<tr><td class="p-3 text-slate-400">Belum ada aktivitas.</td></tr>'
+        }
+        $('ex').onclick = () => {
+            const s = $('fs').value,
+                k = $('fk').value,
+                q = $('fq').value.toLowerCase();
+            const l = LAP.filter(x => (!s || x.Status === s) && (!k || x.Kecamatan === k) && (!q || (x.No + x.Desa + x.Pelapor).toLowerCase().includes(q)));
+            if (!l.length) return toast('Tidak ada data untuk diunduh.');
+            const cols = ['No', 'Tgl', 'Kecamatan', 'Desa', 'Lat', 'Lng', 'Sumber', 'Jenis', 'Luas', 'Kondisi', 'Keterangan', 'Pelapor', 'Status', 'TindakLanjut', 'Dibuat', 'DibuatOleh', 'Diubah'];
+            const c = v => {
+                v = String(v ?? '');
+                if (/^[=+@\-]/.test(v)) v = "'" + v;
+                return '"' + v.replace(/"/g, '""') + '"'
+            };
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob(['\ufeff' + cols.join(',') + '\n' + l.map(x => cols.map(k => c(x[k])).join(',')).join('\n')], {
+                type: 'text/csv;charset=utf-8'
+            }));
+            a.download = 'laporan-karhutla-' + iso(new Date()) + '.csv';
+            a.click();
+            toast(l.length + ' laporan diunduh.', 'ok')
+        };
         // ---- riwayat kartu ----
         let RWD = '';
         const rwKartu = x => {
@@ -7983,6 +8129,11 @@
                 $('sv').disabled = true;
                 try {
                     const g = i => $('f-' + i).value;
+                    if (isNaN(parseFloat(g('lat'))) || isNaN(parseFloat(g('lng')))) throw new Error('Pilih lokasi pada peta atau isi koordinat terlebih dahulu.');
+                    if (g('tgl') > nowLocal()) throw new Error('Tanggal kejadian tidak boleh di masa depan.');
+                    if (g('luas') !== '' && +g('luas') < 0) throw new Error('Perkiraan luas tidak boleh negatif.');
+                    if (g('pelapor').trim().length < 3) throw new Error('Nama pelapor/petugas minimal 3 karakter.');
+                    if ($('f-foto').files.length > 6) throw new Error('Maksimal 6 foto per unggahan.');
                     const r = await api('save', {
                         data: {
                             no: g('no'),
@@ -8001,7 +8152,7 @@
                             fotoBase64: await fotos($('f-foto'))
                         }
                     });
-                    alert('Laporan tersimpan: ' + r.no);
+                    toast('Laporan tersimpan: ' + r.no, 'ok');
                     $('rs').click();
                     await muat();
                     show('laporan')
@@ -8161,12 +8312,13 @@
         $('fa').onsubmit = e => {
             e.preventDefault();
             wrap(async () => {
+                if (!kuat($('a2').value)) throw new Error('Password minimal 8 karakter dan mengandung huruf serta angka');
                 await api('gantiPassword', {
                     lama: $('a1').value,
                     baru: $('a2').value
                 });
                 $('fa').reset();
-                alert('Password diganti.')
+                toast('Password berhasil diganti.', 'ok')
             })
         };
     </script>
