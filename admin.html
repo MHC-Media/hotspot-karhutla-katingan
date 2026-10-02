@@ -584,7 +584,7 @@
         };
         const fmtTgl = s => {
             const d = pd(s);
-            return d ? `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}` : (s || '')
+            return d ? `${HARI[d.getDay()]}, ${String(d.getDate()).padStart(2,'0')} ${BLN[d.getMonth()]} ${d.getFullYear()}` : (s || '')
         }; // Sabtu, 26 September 2026
         const fmtJam = s => {
             const m = /[T ](\d{2}):(\d{2})/.exec(s || '');
