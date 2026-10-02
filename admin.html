@@ -222,6 +222,23 @@
                 </div>
             </section>
 
+            <section id="t-riwayat" class="hidden">
+                <div class="card !p-5 space-y-3">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h2 class="font-extrabold text-lg">Riwayat Laporan Kegiatan</h2>
+                            <div id="rw-sub" class="text-xs text-slate-500"></div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2"><button id="rw-p" class="btn g !px-3" title="Hari sebelumnya"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><input id="rw-d" type="date" class="in !w-auto"><button id="rw-n" class="btn g !px-3" title="Hari berikutnya"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <button id="rw-t" class="btn">Hari Ini</button><button id="rw-c" class="btn" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><i data-lucide="printer" class="w-4 h-4"></i>Cetak PDF Tanggal Ini</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 text-xs"><span class="text-slate-500 mr-1">Tanggal ada laporan:</span><span id="rw-chips" class="flex flex-wrap gap-1.5"></span></div>
+                    <div id="rw-list" class="grid md:grid-cols-2 gap-4"></div>
+                    <div id="rw-ft" class="text-xs text-slate-400"></div>
+                </div>
+            </section>
+
             <section id="t-buat" class="hidden">
                 <form id="fb" class="card grid md:grid-cols-2 gap-3">
                     <input type="hidden" id="f-no"><input type="hidden" id="f-ref">
@@ -559,6 +576,22 @@
             }
         };
 
+        const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+            BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const pd = s => {
+            const m = /(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
+            return m ? new Date(+m[1], m[2] - 1, +m[3]) : null
+        };
+        const fmtTgl = s => {
+            const d = pd(s);
+            return d ? `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}` : (s || '')
+        }; // Sabtu, 26 September 2026
+        const fmtJam = s => {
+            const m = /[T ](\d{2}):(\d{2})/.exec(s || '');
+            return m ? m[1] + '.' + m[2] + ' WIB' : ''
+        };
+        const fmtTJ = s => fmtTgl(s) + (fmtJam(s) ? ' · ' + fmtJam(s) : '');
+        const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         // ---- login ----
         if (location.search.includes('buat=')) {
             sessionStorage.setItem('kt_pre', location.search);
@@ -626,6 +659,7 @@
             const T = [
                 ['ringkasan', 'Ringkasan', 'layout-dashboard'],
                 ['laporan', 'Laporan', 'clipboard-list'],
+                ['riwayat', 'Riwayat', 'history'],
                 ['buat', 'Buat Laporan', 'file-plus'],
                 ['pdf', 'Laporan PDF', 'file-down'], ...(ME.r === 'admin' ? [
                     ['user', 'Pengguna', 'users']
@@ -695,7 +729,8 @@
 
         function draw() {
             ringkasan();
-            tabel()
+            tabel();
+            rwRender()
         }
 
         // ---- ringkasan ----
@@ -749,7 +784,7 @@
                 k = $('fk').value,
                 q = $('fq').value.toLowerCase();
             const l = LAP.filter(x => (!s || x.Status === s) && (!k || x.Kecamatan === k) && (!q || (x.No + x.Desa + x.Pelapor).toLowerCase().includes(q)));
-            $('rows').innerHTML = l.map(x => `<tr class="border-t"><td class="p-2 font-mono">${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${badge(x.Status)}</td><td><button class="btn !py-1" onclick="detail('${esc(x.No)}')"><i data-lucide="eye" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Detail</button></td></tr>`).join('') || '<tr><td class="p-3 text-slate-400">Belum ada laporan.</td></tr>'
+            $('rows').innerHTML = l.map(x => `<tr class="border-t"><td class="p-2 font-mono">${esc(x.No)}</td><td>${esc(fmtTJ(x.Tgl))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${badge(x.Status)}</td><td><button class="btn !py-1" onclick="detail('${esc(x.No)}')"><i data-lucide="eye" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Detail</button></td></tr>`).join('') || '<tr><td class="p-3 text-slate-400">Belum ada laporan.</td></tr>'
         }
 
         function detail(no) {
@@ -757,11 +792,11 @@
                 i = ST.indexOf(x.Status);
             const opts = (ME.r === 'admin' ? ST.filter(s => s !== x.Status) : ST.slice(i + 1, i + 2));
             $('mb').innerHTML = `<div class="flex justify-between"><div><div class="font-mono font-bold">${esc(x.No)}</div>${badge(x.Status)}</div><button class="btn g" onclick="$('modal').classList.add('hidden')"><i data-lucide="x" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Tutup</button></div>
-  <div class="grid grid-cols-2 gap-2 text-xs">${[['Tanggal kejadian',x.Tgl.replace('T',' ')],['Sumber',x.Sumber],['Lokasi',x.Desa+', '+x.Kecamatan],['Koordinat',x.Lat+', '+x.Lng],['Jenis',x.Jenis],['Perkiraan luas',(x.Luas||'-')+' ha'],['Kondisi',x.Kondisi],['Pelapor',x.Pelapor],['Dibuat',x.Dibuat+' oleh '+x.DibuatOleh]].map(a=>`<div><div class="lb">${a[0]}</div>${esc(a[1])}</div>`).join('')}</div>
+  <div class="grid grid-cols-2 gap-2 text-xs">${[['Tanggal kejadian',fmtTJ(x.Tgl)],['Sumber',x.Sumber],['Lokasi',x.Desa+', '+x.Kecamatan],['Koordinat',x.Lat+', '+x.Lng],['Jenis',x.Jenis],['Perkiraan luas',(x.Luas||'-')+' ha'],['Kondisi',x.Kondisi],['Pelapor',x.Pelapor],['Dibuat',fmtTJ(x.Dibuat)+' oleh '+x.DibuatOleh]].map(a=>`<div><div class="lb">${a[0]}</div>${esc(a[1])}</div>`).join('')}</div>
   <p class="text-xs"><span class="lb">Keterangan</span>${esc(x.Keterangan)||'-'}</p>${x.TindakLanjut?`<p class="text-xs"><span class="lb">Tindak lanjut</span>${esc(x.TindakLanjut)}</p>`:''}
   <div class="flex flex-wrap gap-2">${x.Foto.map(f=>`<a target="_blank" href="${img(f,1600)}"><img src="${img(f,300)}" class="h-24 rounded-lg border"></a>`).join('')}</div>
   <a class="text-xs text-emerald-700 underline" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${x.Lat},${x.Lng}"><i data-lucide="map-pin" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Buka di Google Maps</a>
-  <div><div class="lb">Riwayat perubahan status</div><ol class="text-xs space-y-1 border-l-2 border-emerald-500 pl-3">${x.riwayat.map(r=>`<li><b>${esc(r.ke)}</b> · ${esc(r.waktu)} · ${esc(r.oleh)}${r.catatan?`<br><span class="text-slate-500">${esc(r.catatan)}</span>`:''}</li>`).join('')}</ol></div>
+  <div><div class="lb">Riwayat perubahan status</div><ol class="text-xs space-y-1 border-l-2 border-emerald-500 pl-3">${x.riwayat.map(r=>`<li><b>${esc(r.ke)}</b> · ${esc(fmtTJ(r.waktu))} · ${esc(r.oleh)}${r.catatan?`<br><span class="text-slate-500">${esc(r.catatan)}</span>`:''}</li>`).join('')}</ol></div>
   ${opts.length?`<div class="border-t pt-3 space-y-2"><div class="lb">Perbarui status</div><select id="ns" class="in">${opts.map(o=>`<option>${o}</option>`).join('')}</select>
   <textarea id="nc" rows="2" class="in" placeholder="Catatan / keterangan tindak lanjut (wajib untuk DITINDAKLANJUTI & SELESAI)"></textarea><input id="nf" type="file" accept="image/*" multiple class="in">
   <button class="btn" onclick="ubahStatus('${esc(x.No)}')"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan Status</button></div>`:''}
@@ -803,6 +838,60 @@
             $('modal').classList.add('hidden');
             await muat()
         });
+
+        // ---- riwayat kartu ----
+        let RWD = '';
+        const rwKartu = x => {
+            const f = x.Foto[0];
+            return `<div class="card !p-4 flex flex-col gap-2"><div class="flex justify-between items-start gap-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">${esc(x.Sumber)}</span><span class="text-[11px] text-slate-400 text-right">${esc(fmtTJ(x.Tgl))}</span></div>
+ <div class="text-sm"><b>${esc(x.Desa)}</b>, Kec. ${esc(x.Kecamatan)} • <span class="text-slate-500">${esc(x.Pelapor)}</span></div>
+ <div class="flex flex-wrap gap-1.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">${esc(x.Jenis)}</span>${badge(x.Status)}</div>
+ ${f?`<a href="${img(f,1600)}" target="_blank" class="relative block"><img loading="lazy" src="${img(f,800)}" class="w-full h-52 object-cover rounded-xl border">${x.Foto.length>1?`<span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">+${x.Foto.length-1} foto</span>`:''}</a>`:''}
+ <p class="text-sm">${esc(x.Keterangan)||'<span class="text-slate-400">Tanpa keterangan</span>'}</p>${x.TindakLanjut?`<p class="text-xs text-slate-500"><b>Tindak lanjut:</b> ${esc(x.TindakLanjut)}</p>`:''}
+ <div class="flex items-center justify-between mt-auto pt-1"><code class="text-[10px] text-slate-400">${esc(x.Lat)}, ${esc(x.Lng)}</code><div class="flex gap-1.5"><button class="btn g !py-1.5" onclick="detail('${esc(x.No)}')">Detail</button><a class="btn !py-1.5" style="background:#064e3b" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${esc(x.Lat)},${esc(x.Lng)}">Google Maps</a></div></div></div>`
+        };
+
+        function rwRender() {
+            const ds0 = [...new Set(LAP.map(x => x.Tgl.slice(0, 10)))].sort();
+            if (!RWD) {
+                const t = iso(new Date());
+                RWD = (ds0.includes(t) || !ds0.length) ? t : ds0[ds0.length - 1]
+            }
+            $('rw-d').value = RWD;
+            const day = LAP.filter(x => x.Tgl.slice(0, 10) === RWD).sort((p, q) => q.Tgl.localeCompare(p.Tgl));
+            const lim = iso(new Date(Date.now() - 60 * 864e5)),
+                rec = LAP.filter(x => x.Tgl.slice(0, 10) >= lim),
+                by = cnt(rec, x => x.Tgl.slice(0, 10)),
+                ds = Object.keys(by).sort().reverse();
+            $('rw-sub').textContent = `${fmtTgl(RWD)} • ${day.length} laporan`;
+            $('rw-chips').innerHTML = ds.map(d => `<button data-d="${d}" class="px-3 py-1 rounded-full text-xs font-bold border ${d===RWD?'bg-emerald-600 text-white border-emerald-600':'bg-white text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'}">${d.slice(8)}/${d.slice(5,7)} (${by[d]})</button>`).join('') || '<span class="text-slate-400">Belum ada.</span>';
+            $('rw-list').innerHTML = day.map(rwKartu).join('') || '<div class="md:col-span-2 text-center text-sm text-slate-400 py-10">Tidak ada laporan pada tanggal ini.</div>';
+            $('rw-ft').textContent = rec.length ? `Total ${rec.length} laporan (60 hari terakhir) • terlama: ${fmtTgl(ds[ds.length-1])}, terbaru: ${fmtTgl(ds[0])}.` : 'Belum ada laporan dalam 60 hari terakhir.'
+        }
+        const rwGeser = n => {
+            const d = pd(RWD);
+            d.setDate(d.getDate() + n);
+            RWD = iso(d);
+            rwRender()
+        };
+        $('rw-p').onclick = () => rwGeser(-1);
+        $('rw-n').onclick = () => rwGeser(1);
+        $('rw-t').onclick = () => {
+            RWD = iso(new Date());
+            rwRender()
+        };
+        $('rw-d').onchange = () => {
+            RWD = $('rw-d').value || RWD;
+            rwRender()
+        };
+        $('rw-chips').onclick = e => {
+            const b = e.target.closest('[data-d]');
+            if (b) {
+                RWD = b.dataset.d;
+                rwRender()
+            }
+        };
+        $('rw-c').onclick = () => buatPDF(RWD, RWD, '', '', true);
 
         // ---- form laporan ----
         let GJ = null,
@@ -991,11 +1080,7 @@
         }
 
         // ---- PDF (cetak -> simpan sebagai PDF) ----
-        $('pg').onclick = () => {
-            const a = $('p1').value,
-                b = $('p2').value,
-                k = $('pk').value,
-                s = $('ps').value;
+        function buatPDF(a, b, k, s, pf) {
             const l = LAP.filter(x => {
                 const d = x.Tgl.slice(0, 10);
                 return (!a || d >= a) && (!b || d <= b) && (!k || x.Kecamatan === k) && (!s || x.Status === s)
@@ -1008,16 +1093,9 @@
                 perlu = (c[ST[0]] || 0) + (c[ST[1]] || 0),
                 P = v => Math.round(v * 100 / n);
             const wil = ME.r === 'admin' ? (k || 'Seluruh Kabupaten Katingan') : (ME.t === 'desa' ? 'Desa/Kel. ' + ME.d + ', Kec. ' + ME.k : 'Kecamatan ' + ME.k);
-            const nowS = new Date().toLocaleString('id-ID', {
-                    timeZone: 'Asia/Jakarta',
-                    dateStyle: 'long',
-                    timeStyle: 'short'
-                }),
-                fd = v => v ? new Date(v).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                }) : '';
+            const nowD = new Date(),
+                nowS = fmtTgl(iso(nowD)) + ', ' + String(nowD.getHours()).padStart(2, '0') + '.' + String(nowD.getMinutes()).padStart(2, '0') + ' WIB',
+                fd = fmtTgl;
             const bars = (o, col, m = 10) => {
                 const e = Object.entries(o).sort((p, q) => q[1] - p[1]).slice(0, m),
                     mx = e[0] ? e[0][1] : 1;
@@ -1046,7 +1124,7 @@
   .ttd{margin-top:22px;margin-left:auto;width:210px;text-align:center;page-break-inside:avoid}.ft{margin-top:14px;color:#94a3b8;font-size:8.5px;text-align:center}`;
             const html = `<html><head><meta charset="utf-8"><title>Laporan Karhutla ${esc(wil)}</title><style>${css}</style></head><body>
   <div class="hd"><div class="lg">HK</div><div><h1>LAPORAN KEJADIAN KEBAKARAN HUTAN DAN LAHAN</h1><p>Hotspot Terpadu Karhutla · Kabupaten Katingan</p></div></div>
-  <div class="meta"><div><small>Wilayah</small><b>${esc(wil)}</b></div><div><small>Periode</small><b>${esc(a?fd(a):'Awal')} – ${esc(b?fd(b):'Sekarang')}</b></div><div><small>Status</small><b>${esc(s||'Semua')}</b></div><div><small>Dicetak</small><b>${esc(nowS)}</b></div></div>
+  <div class="meta"><div><small>Wilayah</small><b>${esc(wil)}</b></div><div><small>Periode</small><b>${a&&a===b?esc(fd(a)):esc(a?fd(a):'Awal')+' – '+esc(b?fd(b):'Sekarang')}</b></div><div><small>Status</small><b>${esc(s||'Semua')}</b></div><div><small>Dicetak</small><b>${esc(nowS)}</b></div></div>
   <h2>Ringkasan Statistik</h2>
   <div class="kp"><div style="background:#ecfdf5"><small>Total laporan</small><b style="color:#047857">${n}</b></div><div style="background:#fffbeb"><small>Perkiraan luas (ha)</small><b style="color:#b45309">${luas.toFixed(2)}</b></div><div style="background:#eff6ff"><small>Tingkat selesai</small><b style="color:#1d4ed8">${P(done)}%</b></div><div style="background:#fef2f2"><small>Menunggu verifikasi</small><b style="color:#b91c1c">${perlu}</b></div></div>
   <div class="st">${ST.map((x,i)=>`<div style="background:${WR[i]}"><b>${c[x]||0}</b><small>${x}</small></div>`).join('')}</div>
@@ -1054,19 +1132,20 @@
   <div class="g2"><div><h2>Per Kecamatan</h2>${bars(cnt(l,x=>x.Kecamatan),'#10b981')}</div><div><h2>Per Desa/Kelurahan</h2>${bars(cnt(l,x=>x.Desa),'#f59e0b')}</div>
   <div><h2>Jenis Kejadian</h2>${bars(cnt(l,x=>x.Jenis),'#3b82f6',6)}</div><div><h2>Kondisi Kejadian</h2>${bars(cnt(l,x=>x.Kondisi),'#8b5cf6',6)}</div></div>
   <h2>Tren Laporan per Hari</h2><div class="tn">${days.map(d=>`<div><i style="height:${byD[d]*100/mxd}%" title="${byD[d]}"></i><small>${d.slice(8)}/${d.slice(5,7)}</small></div>`).join('')}</div>
-  <h2>Rekap Laporan</h2><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Lokasi</th><th>Jenis</th><th>Luas</th><th>Status</th></tr>${l.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.No)}</td><td>${esc(x.Tgl.replace('T',' '))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${esc(x.Luas||'-')}</td><td>${esc(x.Status)}</td></tr>`).join('')}</table>
+  <h2>Rekap Laporan</h2><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Lokasi</th><th>Jenis</th><th>Luas</th><th>Status</th></tr>${l.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.No)}</td><td>${esc(fmtTJ(x.Tgl))}</td><td>${esc(x.Desa)}, ${esc(x.Kecamatan)}</td><td>${esc(x.Jenis)}</td><td>${esc(x.Luas||'-')}</td><td>${esc(x.Status)}</td></tr>`).join('')}</table>
   <h2 style="page-break-before:always">Rincian Laporan</h2>${l.map(x=>`<div class="cd"><div class="t"><b>${esc(x.No)}</b><span class="bd" style="background:${WR[ST.indexOf(x.Status)]||'#64748b'}">${esc(x.Status)}</span></div>
-   <div class="kv"><div><small>Tanggal kejadian</small>${esc(x.Tgl.replace('T',' '))}</div><div><small>Lokasi</small>${esc(x.Desa)}, ${esc(x.Kecamatan)}</div><div><small>Koordinat</small>${esc(x.Lat)}, ${esc(x.Lng)}</div><div><small>Jenis</small>${esc(x.Jenis)}</div><div><small>Luas / Kondisi</small>${esc(x.Luas||'-')} ha · ${esc(x.Kondisi)}</div><div><small>Sumber / Pelapor</small>${esc(x.Sumber)} · ${esc(x.Pelapor)}</div></div>
+   <div class="kv"><div><small>Tanggal kejadian</small>${esc(fmtTJ(x.Tgl))}</div><div><small>Lokasi</small>${esc(x.Desa)}, ${esc(x.Kecamatan)}</div><div><small>Koordinat</small>${esc(x.Lat)}, ${esc(x.Lng)}</div><div><small>Jenis</small>${esc(x.Jenis)}</div><div><small>Luas / Kondisi</small>${esc(x.Luas||'-')} ha · ${esc(x.Kondisi)}</div><div><small>Sumber / Pelapor</small>${esc(x.Sumber)} · ${esc(x.Pelapor)}</div></div>
    <p style="margin:6px 0 0"><b>Keterangan:</b> ${esc(x.Keterangan)||'-'}<br><b>Tindak lanjut:</b> ${esc(x.TindakLanjut)||'-'}</p>
-   <div class="tl">${x.riwayat.map(r=>`<div><b>${esc(r.ke)}</b> · ${esc(r.waktu)} · ${esc(r.oleh)}${r.catatan?' — '+esc(r.catatan):''}</div>`).join('')}</div>
-   ${$('pf').checked&&x.Foto.length?'<div class="ph">'+x.Foto.slice(0,6).map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
-  <div class="ttd">Katingan, ${esc(nowS.split(' pukul')[0].split(',')[0])}<br>Operator<br><br><br><br><b>${esc(ME.n)}</b></div><div class="ft">Dokumen dihasilkan otomatis oleh Sistem Hotspot Terpadu Karhutla Kabupaten Katingan</div></body></html>`;
+   <div class="tl">${x.riwayat.map(r=>`<div><b>${esc(r.ke)}</b> · ${esc(fmtTJ(r.waktu))} · ${esc(r.oleh)}${r.catatan?' — '+esc(r.catatan):''}</div>`).join('')}</div>
+   ${pf&&x.Foto.length?'<div class="ph">'+x.Foto.slice(0,6).map(f=>`<img src="${img(f,500)}">`).join('')+'</div>':''}</div>`).join('')}
+  <div class="ttd">Katingan, ${esc(fmtTgl(iso(nowD)))}<br>Operator<br><br><br><br><b>${esc(ME.n)}</b></div><div class="ft">Dokumen dihasilkan otomatis oleh Sistem Hotspot Terpadu Karhutla Kabupaten Katingan</div></body></html>`;
             const w = window.open('', '_blank');
             if (!w) return alert('Izinkan pop-up untuk mencetak.');
             w.document.write(html);
             w.document.close();
             setTimeout(() => w.print(), 2000)
-        };
+        }
+        $('pg').onclick = () => buatPDF($('p1').value, $('p2').value, $('pk').value, $('ps').value, $('pf').checked);
 
         // ---- pengguna & akun ----
         async function users() {
