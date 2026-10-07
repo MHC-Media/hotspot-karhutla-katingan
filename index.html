@@ -295,7 +295,7 @@
                     <thead>
                         <tr class="bg-emerald-50 text-emerald-900 border-b border-emerald-100 font-semibold dark:bg-slate-800 dark:text-amber-300 dark:border-slate-700">
                             <th class="py-3 px-4 rounded-l-xl">Tanggal & Waktu Satelit</th>
-                            <th class="py-3 px-4">Desa/Kelurahan</th>
+                            <th class="py-3 px-4">Desa/</th>
                             <th class="py-3 px-4">Kecamatan</th>
                             <th class="py-3 px-4">Satelit</th>
                             <th class="py-3 px-4">Confidence</th>
@@ -1233,7 +1233,7 @@
             return Date.UTC(y, m - 1, d, hh, mm) - (7 * 60 * 60 * 1000);
         }
 
-        // Batas wilayah SELURUH desa/kelurahan Kabupaten Katingan (13 kecamatan, 161 desa/kelurahan)
+        // Batas wilayah SELURUH desa/ Kabupaten Katingan (13 kecamatan, 161 desa/)
         // Dipakai untuk menggambar poligon wilayah di peta DAN sebagai referensi nama
         // desa/kecamatan (data titik panas sendiri sudah difilter di backend Apps Script,
         // sehingga hanya titik DI DALAM Kabupaten Katingan yang pernah dikirim ke sini).
@@ -9146,7 +9146,7 @@
     var bar = document.createElement('div');
     bar.id = 'map-chips'; bar.className = 'flex flex-wrap items-center gap-2 mb-3 px-1';
     gis.parentNode.insertBefore(bar, gis);
-    [['Kelurahan', geoJsonLayer], ['Titik Panas', hotspotGroup], ['Angin', wind.group], ['Awan', cloudG], ['Hujan', rainG]].forEach(function(c) {
+    [['Desa/Kelurahan', geoJsonLayer], ['Titik Panas', hotspotGroup], ['Angin', wind.group], ['Awan', cloudG], ['Hujan', rainG]].forEach(function(c) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'map-chip'; b.textContent = c[0]; bar.appendChild(b);
         var sync = function() { b.classList.toggle('on', map.hasLayer(c[1])); };
         c[1].on('add remove', sync); sync();
