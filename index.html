@@ -259,7 +259,7 @@
         <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm dark:bg-slate-900">
             <div id="data-error-banner" role="alert" class="hidden mb-3 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold dark:bg-red-950/40 dark:border-red-900 dark:text-red-300"></div>
             <div id="gis-map"></div>
-            <p class="text-[11px] text-slate-400 mt-2 px-1">Arah angin: centang <b>Arah Angin</b> pada kontrol layer (pojok kanan atas) atau tekan tombol <b>Arah Angin</b> di peta, lalu klik titik mana pun / klik panah angin. Panah menunjuk ke arah tujuan angin (arah api cenderung menjalar).</p>
+            <p class="text-[11px] text-slate-400 mt-2 px-1"><b>Angin:</b> garis-garis bergerak di peta adalah aliran angin (arah &amp; kecepatan dihitung dari grid data angin; warna garis = kecepatan, lihat skala di kartu kompas). Tombol <b>Aliran</b>/<b>Panah</b> pada kartu kompas mengatur tampilan; klik desa atau titik mana pun untuk rincian angin. <b>Hujan:</b> aktifkan chip <b>Hujan</b> untuk prakiraan BMKG per desa/kelurahan, geser jam dengan ◀ ▶, atau buka <b>Lihat tabel data</b>.</p>
         </div>
 
         <!-- Statistik & Tren Hotspot Harian per Kecamatan -->
@@ -447,7 +447,7 @@
     function kelas(kmh) {
         if (kmh < 1) return {
             label: 'Tenang',
-            color: '#94a3b8',
+            color: '#3b82f6',
             risk: 'Hampir tidak ada dorongan angin.'
         };
         if (kmh < 12) return {
@@ -604,7 +604,8 @@
     async function getMany(points) {
         var out = new Array(points.length),
             need = [],
-            idx = [];
+            idx = [],
+            firstErr = null;
         points.forEach(function(p, i) {
             var c = cache.get(key(p.lat, p.lng));
             if (fresh(c)) out[i] = c;
@@ -613,16 +614,23 @@
                 idx.push(i);
             }
         });
-        for (var s = 0; s < need.length; s += 40) {
+        var jobs = [];
+        for (var s = 0; s < need.length; s += 40) jobs.push(s);
+        await Promise.all(jobs.map(async function(s) { // potongan 40 titik, berjalan paralel; kegagalan sebagian ditoleransi
             var chunk = need.slice(s, s + 40);
-            var res = await fetchRaw(chunk);
-            res.forEach(function(w, j) {
-                if (w) {
-                    cache.set(key(chunk[j].lat, chunk[j].lng), w);
-                    out[idx[s + j]] = w;
-                }
-            });
-        }
+            try {
+                var res = await fetchRaw(chunk);
+                res.forEach(function(w, j) {
+                    if (w) {
+                        cache.set(key(chunk[j].lat, chunk[j].lng), w);
+                        out[idx[s + j]] = w;
+                    }
+                });
+            } catch (e) {
+                if (!firstErr) firstErr = e;
+            }
+        }));
+        if (firstErr && !out.some(Boolean)) throw firstErr;
         return out;
     }
 
@@ -680,6 +688,33 @@
         '.wk-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px}' +
         '.wk-hint{margin-top:6px;font-size:10px;color:#64748b}' +
         '.dark .wk-dk .wk-hint{color:#94a3b8}' +
+        '.wk-cc{width:166px;padding:6px 10px 10px;text-align:center;position:relative}' +
+        '.wk-cc .wk-rose2{display:block;margin:0 auto}' +
+        '.wk-rose2 .wk-ring{fill:none;stroke:#cbd5e1;stroke-width:1.5}' +
+        '.wk-rose2 .wk-xh{stroke:#e2e8f0;stroke-width:1}' +
+        '.wk-rose2 .wk-tick{stroke:#94a3b8;stroke-width:1.5}' +
+        '.wk-rose2 .wk-hub{fill:#fff}' +
+        '.wk-lbl2{font:800 15px system-ui,sans-serif;fill:#1e293b;text-anchor:middle;dominant-baseline:central}' +
+        '.wk-lbl2.n{fill:#dc2626}' +
+        '.wk-lbl3{font:700 9px system-ui,sans-serif;fill:#64748b;text-anchor:middle;dominant-baseline:central}' +
+        '.dark .wk-dk .wk-ring{stroke:#475569}.dark .wk-dk .wk-xh{stroke:#334155}.dark .wk-dk .wk-lbl2{fill:#f1f5f9}.dark .wk-dk .wk-lbl2.n{fill:#f87171}.dark .wk-dk .wk-lbl3{fill:#94a3b8}.dark .wk-dk .wk-hub{fill:#0f172a}' +
+        '.wk-cc-t{font-size:14px;font-weight:600;margin-top:2px}' +
+        '.wk-cc-s{font-size:12px;color:#64748b}.dark .wk-dk .wk-cc-s{color:#94a3b8}' +
+        '.wk-cc-d{font-size:10.5px;color:#64748b;margin-top:2px}.dark .wk-dk .wk-cc-d{color:#94a3b8}' +
+        '.wk-rf{position:absolute;top:6px;right:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:#64748b;cursor:pointer}' +
+        '.wk-rf:hover{background:rgba(100,116,139,.15)}' +
+        '.wk-ramp{height:5px;border-radius:3px;margin:8px 2px 0}' +
+        '.wk-ramp-l{display:flex;justify-content:space-between;font-size:9px;color:#64748b;margin-top:2px;padding:0 1px}.dark .wk-dk .wk-ramp-l{color:#94a3b8}' +
+        '.wk-tgs{display:flex;gap:6px;justify-content:center;margin-top:7px}' +
+        '.wk-tg{font:700 10.5px system-ui,sans-serif;padding:3px 10px;border-radius:999px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;cursor:pointer}' +
+        '.wk-tg.on{background:#0d9488;border-color:#0d9488;color:#fff}.wk-tg:disabled{opacity:.5;cursor:default}' +
+        '.dark .wk-dk .wk-tg:not(.on){background:#1e293b;border-color:#475569;color:#cbd5e1}' +
+        '.wk-stat{display:flex;align-items:center;gap:6px;max-width:260px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.92);box-shadow:0 1px 4px rgba(0,0,0,.2);color:#334155;font:600 10.5px/1.3 system-ui,sans-serif}' +
+        '.dark .wk-stat{background:rgba(15,23,42,.92);color:#e2e8f0}' +
+        '.wk-stat i{flex:none;width:7px;height:7px;border-radius:50%;background:#94a3b8}.wk-stat i.ok{background:#22c55e}.wk-stat i.bad{background:#ef4444}.wk-stat i.wait{background:#f59e0b}' +
+        '.wk-stat button{border:0;background:none;color:#0369a1;font:700 10.5px system-ui,sans-serif;text-decoration:underline;cursor:pointer;padding:0}.dark .wk-stat button{color:#7dd3fc}' +
+        '.wk-flow{position:absolute;left:0;top:0;pointer-events:none;transition:opacity .35s ease}' +
+        '@media(max-width:480px){.wk-cc{width:140px}.wk-cc .wk-rose2{width:96px;height:96px}}' +
         '@media(max-width:480px){.wk-panel{width:176px;padding:8px 10px}}';
 
     function injectCss() {
@@ -712,6 +747,36 @@
     function icon(size) {
         return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
             '<path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/></svg>';
+    }
+
+    function refreshIcon(size) {
+        return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/></svg>';
+    }
+
+    // Kartu kompas: mawar angin 8 arah + jarum menunjuk ke arah TUJUAN angin
+    function compassSvg(w, size) {
+        var col = kelas(w.speed).color,
+            to = toward(w.dir),
+            t = '';
+        for (var i = 0; i < 8; i++) {
+            var a = i * 45 * Math.PI / 180,
+                r1 = (i % 2 ? 50 : 47),
+                r2 = 54;
+            t += '<line class="wk-tick" x1="' + (80 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (80 - r1 * Math.cos(a)).toFixed(1) +
+                '" x2="' + (80 + r2 * Math.sin(a)).toFixed(1) + '" y2="' + (80 - r2 * Math.cos(a)).toFixed(1) + '"/>';
+        }
+        return '<svg class="wk-rose2" viewBox="0 0 160 160" width="' + size + '" height="' + size + '" role="img" aria-label="Angin dari ' + compass(w.dir).nama + '">' +
+            '<circle cx="80" cy="80" r="54" class="wk-ring"/>' +
+            '<line class="wk-xh" x1="80" y1="30" x2="80" y2="130"/><line class="wk-xh" x1="30" y1="80" x2="130" y2="80"/>' + t +
+            '<text x="80" y="13" class="wk-lbl2 n">U</text><text x="148" y="81" class="wk-lbl2">T</text>' +
+            '<text x="80" y="149" class="wk-lbl2">S</text><text x="12" y="81" class="wk-lbl2">B</text>' +
+            '<text x="56" y="56" class="wk-lbl3">BL</text><text x="104" y="56" class="wk-lbl3">TL</text>' +
+            '<text x="56" y="105" class="wk-lbl3">BD</text><text x="104" y="105" class="wk-lbl3">TG</text>' +
+            '<g style="transform:rotate(' + to.toFixed(0) + 'deg);transform-origin:80px 80px">' +
+            '<line x1="80" y1="80" x2="80" y2="40" stroke="' + col + '" stroke-width="4.5" stroke-linecap="round"/>' +
+            '<path d="M80 26 L90 46 L70 46 Z" fill="' + col + '" stroke="' + col + '" stroke-width="2" stroke-linejoin="round"/></g>' +
+            '<circle cx="80" cy="80" r="5" class="wk-hub" stroke="' + col + '" stroke-width="3"/></svg>';
     }
 
     // ctx: 'hotspot' | 'point' | '' (tanpa catatan api)
@@ -766,6 +831,426 @@
         });
     }
 
+    /* ---------- GRID ANGIN (u,v dalam m/s) ---------- */
+    var GSTEP = 0.05; // simpul grid selalu kelipatan 0.05 deg agar cocok dengan pembulatan API/cache
+
+    function gridSpec(b, step, maxN) {
+        var pad = 0.1, s = Math.ceil((step || 0.4) / GSTEP - 1e-9) * GSTEP, sp;
+        for (var g = 0; g < 20; g++) {
+            sp = {
+                lat0: Math.floor((b.getSouth() - pad) / GSTEP) * GSTEP,
+                lng0: Math.floor((b.getWest() - pad) / GSTEP) * GSTEP,
+                step: s
+            };
+            sp.nLat = Math.ceil((b.getNorth() + pad - sp.lat0) / s - 1e-9) + 1;
+            sp.nLng = Math.ceil((b.getEast() + pad - sp.lng0) / s - 1e-9) + 1;
+            if (sp.nLat * sp.nLng <= (maxN || 80)) break;
+            s += GSTEP;
+        }
+        sp.nodes = [];
+        for (var i = 0; i < sp.nLat; i++)
+            for (var j = 0; j < sp.nLng; j++) sp.nodes.push({
+                lat: +(sp.lat0 + i * s).toFixed(2),
+                lng: +(sp.lng0 + j * s).toFixed(2),
+                i: i,
+                j: j
+            });
+        return sp;
+    }
+
+    function uv(w) { // km/jam & arah ASAL (derajat) -> komponen vektor m/s (u: ke timur, v: ke utara)
+        var r = w.dir * Math.PI / 180, ms = w.speed / 3.6;
+        return [-ms * Math.sin(r), -ms * Math.cos(r)];
+    }
+
+    // isi simpul yang kosong dengan rata-rata tetangga; null bila tidak ada data sama sekali
+    function fillGrid(sp, U, V) {
+        var n = U.length, ok = 0, k;
+        for (k = 0; k < n; k++)
+            if (!isNaN(U[k])) ok++;
+        if (!ok) return null;
+        for (var pass = 0; pass < 12 && ok < n; pass++) {
+            var nu = U.slice(),
+                nv = V.slice();
+            for (k = 0; k < n; k++) {
+                if (!isNaN(U[k])) continue;
+                var i = Math.floor(k / sp.nLng),
+                    j = k % sp.nLng,
+                    su = 0,
+                    sv = 0,
+                    c = 0;
+                for (var di = -1; di <= 1; di++)
+                    for (var dj = -1; dj <= 1; dj++) {
+                        var ii = i + di,
+                            jj = j + dj;
+                        if (ii < 0 || jj < 0 || ii >= sp.nLat || jj >= sp.nLng) continue;
+                        var q = ii * sp.nLng + jj;
+                        if (!isNaN(U[q])) {
+                            su += U[q];
+                            sv += V[q];
+                            c++;
+                        }
+                    }
+                if (c) {
+                    nu[k] = su / c;
+                    nv[k] = sv / c;
+                }
+            }
+            U = nu;
+            V = nv;
+            ok = 0;
+            for (k = 0; k < n; k++)
+                if (!isNaN(U[k])) ok++;
+        }
+        return {
+            sp: sp,
+            U: U,
+            V: V
+        };
+    }
+
+    // dari simpul teratur (hasil Open-Meteo): res sejajar dengan sp.nodes
+    function gridFromNodes(sp, res) {
+        var U = [],
+            V = [];
+        sp.nodes.forEach(function(nd, k) {
+            var w = res[k];
+            if (w) {
+                var c = uv(w);
+                U.push(c[0]);
+                V.push(c[1]);
+            } else {
+                U.push(NaN);
+                V.push(NaN);
+            }
+        });
+        return fillGrid(sp, U, V);
+    }
+
+    // dari titik tersebar (mis. prakiraan BMKG per desa): interpolasi IDW ke grid teratur
+    function gridFromScatter(sp, pts) {
+        var P = pts.filter(function(p) {
+            return p && Number.isFinite(p.speed) && Number.isFinite(p.dir);
+        }).map(function(p) {
+            var c = uv(p);
+            return [p.lat, p.lng, c[0], c[1]];
+        });
+        if (!P.length) return null;
+        var U = [],
+            V = [];
+        sp.nodes.forEach(function(nd) {
+            var su = 0,
+                sv = 0,
+                sw = 0;
+            for (var k = 0; k < P.length; k++) {
+                var dy = P[k][0] - nd.lat,
+                    dx = (P[k][1] - nd.lng) * Math.cos(nd.lat * Math.PI / 180),
+                    d2 = dx * dx + dy * dy + 1e-4;
+                if (d2 > 0.9) continue; // radius ~0.95 deg
+                var w = 1 / (d2 * d2);
+                su += w * P[k][2];
+                sv += w * P[k][3];
+                sw += w;
+            }
+            U.push(sw ? su / sw : NaN);
+            V.push(sw ? sv / sw : NaN);
+        });
+        return fillGrid(sp, U, V);
+    }
+
+    function sampleGrid(g, lat, lng, out) { // interpolasi bilinear; di luar grid = nilai tepi terdekat
+        var sp = g.sp,
+            fy = (lat - sp.lat0) / sp.step,
+            fx = (lng - sp.lng0) / sp.step;
+        fy = fy < 0 ? 0 : fy > sp.nLat - 1 ? sp.nLat - 1 : fy;
+        fx = fx < 0 ? 0 : fx > sp.nLng - 1 ? sp.nLng - 1 : fx;
+        var i = Math.min(Math.floor(fy), sp.nLat - 2),
+            j = Math.min(Math.floor(fx), sp.nLng - 2);
+        if (i < 0) i = 0;
+        if (j < 0) j = 0;
+        var ty = sp.nLat > 1 ? fy - i : 0,
+            tx = sp.nLng > 1 ? fx - j : 0,
+            i2 = Math.min(i + 1, sp.nLat - 1),
+            j2 = Math.min(j + 1, sp.nLng - 1),
+            a = i * sp.nLng + j,
+            b = i * sp.nLng + j2,
+            c = i2 * sp.nLng + j,
+            d = i2 * sp.nLng + j2;
+        out[0] = (g.U[a] * (1 - tx) + g.U[b] * tx) * (1 - ty) + (g.U[c] * (1 - tx) + g.U[d] * tx) * ty;
+        out[1] = (g.V[a] * (1 - tx) + g.V[b] * tx) * (1 - ty) + (g.V[c] * (1 - tx) + g.V[d] * tx) * ty;
+        return out;
+    }
+
+    /* ---------- ANIMASI ALIRAN ANGIN (partikel pada canvas) ---------- */
+    // Setiap partikel bergerak mengikuti vektor angin hasil interpolasi grid; kecepatan angin
+    // menentukan panjang goresan, kecepatan gerak, dan warna garis.
+    var SPD = [0.5, 1.5, 3, 5, 7.5, 10, 14]; // batas kelas kecepatan (m/s)
+    var PAL_LIGHT = ['#5c7cfa', '#1c7ed6', '#0c8599', '#2b8a3e', '#e67700', '#d9480f', '#c92a2a', '#862e9c'];
+    var PAL_DARK = ['#a5d8ff', '#74c0fc', '#63e6be', '#b2f2bb', '#ffe066', '#ffa94d', '#ff8787', '#f783ac'];
+
+    function Flow(map, opt) {
+        var canvas = null,
+            ctx = null,
+            grid = null,
+            raf = 0,
+            on = false,
+            visible = true,
+            moving = false,
+            last = 0,
+            W = 0,
+            H = 0,
+            dpr = 1,
+            CELL = 4,
+            nx = 0,
+            ny = 0,
+            FU = null,
+            FV = null,
+            N = 0,
+            X = null,
+            Y = null,
+            AGE = null,
+            LIFE = null,
+            io = null,
+            tmp = [0, 0],
+            KS = 0.2,
+            reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+        var BK = 8,
+            bx0 = [],
+            by0 = [],
+            bx1 = [],
+            by1 = [];
+
+        function ensure() {
+            if (canvas) return;
+            if (!map.getPane('windFlow')) {
+                var p = map.createPane('windFlow');
+                p.style.zIndex = 430;
+                p.style.pointerEvents = 'none';
+            }
+            canvas = L.DomUtil.create('canvas', 'wk-flow', map.getPane('windFlow'));
+            canvas.setAttribute('aria-hidden', 'true');
+            canvas.style.opacity = 0;
+            ctx = canvas.getContext('2d');
+        }
+
+        function palette() {
+            return (opt.darkBase && opt.darkBase()) ? PAL_DARK : PAL_LIGHT;
+        }
+
+        function resize() {
+            var s = map.getSize();
+            W = s.x;
+            H = s.y;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.round(W * dpr);
+            canvas.height = Math.round(H * dpr);
+            canvas.style.width = W + 'px';
+            canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.lineCap = 'round';
+            L.DomUtil.setPosition(canvas, map.containerPointToLayerPoint([0, 0]));
+            CELL = W < 600 ? 6 : 4;
+            var want = Math.round(W * H / (W < 600 ? 520 : 330));
+            N = Math.max(500, Math.min(W < 600 ? 1600 : 3600, want));
+            X = new Float32Array(N);
+            Y = new Float32Array(N);
+            AGE = new Float32Array(N);
+            LIFE = new Float32Array(N);
+            for (var i = 0; i < N; i++) seed(i, true);
+        }
+
+        function seed(i, spread) {
+            X[i] = Math.random() * W;
+            Y[i] = Math.random() * H;
+            LIFE[i] = 50 + Math.random() * 70;
+            AGE[i] = spread ? Math.random() * LIFE[i] : 0;
+        }
+
+        // vektor kecepatan (piksel/frame) di setiap sel layar, dihitung dari grid angin
+        function buildField() {
+            if (!grid) {
+                FU = null;
+                return;
+            }
+            nx = Math.ceil(W / CELL) + 2;
+            ny = Math.ceil(H / CELL) + 2;
+            FU = new Float32Array(nx * ny);
+            FV = new Float32Array(nx * ny);
+            var z = map.getZoom(),
+                scale = 256 * Math.pow(2, z),
+                org = map.getPixelBounds().min,
+                k = Math.max(0.12, Math.min(0.55, 0.2 * Math.pow(2, (z - 9) * 0.3))),
+                p = 0;
+            KS = k;
+            for (var j = 0; j < ny; j++) {
+                var wy = org.y + j * CELL,
+                    lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * wy / scale))) * 180 / Math.PI;
+                for (var i = 0; i < nx; i++, p++) {
+                    var lng = (org.x + i * CELL) / scale * 360 - 180;
+                    sampleGrid(grid, lat, lng, tmp);
+                    FU[p] = tmp[0] * k;
+                    FV[p] = -tmp[1] * k; // sumbu y layar menghadap ke bawah
+                }
+            }
+        }
+
+        function bucket(sp) { // sp: kecepatan m/s
+            var b = 0;
+            while (b < SPD.length && sp >= SPD[b]) b++;
+            return b;
+        }
+
+        function frame(ts) {
+            raf = 0;
+            if (!on || !visible || moving || !FU) return;
+            var dt = last ? Math.min(ts - last, 50) : 16.7;
+            last = ts;
+            var fs = dt / 16.7,
+                pal = palette(),
+                dark = pal === PAL_DARK,
+                b, i;
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.fillStyle = 'rgba(0,0,0,' + (dark ? 0.9 : 0.92) + ')';
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalCompositeOperation = 'source-over';
+            for (b = 0; b < BK; b++) {
+                bx0[b].length = 0;
+                by0[b].length = 0;
+                bx1[b].length = 0;
+                by1[b].length = 0;
+            }
+            for (i = 0; i < N; i++) {
+                var x = X[i],
+                    y = Y[i];
+                AGE[i] += fs;
+                if (AGE[i] > LIFE[i] || x < 0 || y < 0 || x >= W || y >= H) {
+                    seed(i, false);
+                    continue;
+                }
+                var fx = x / CELL,
+                    fy = y / CELL,
+                    ix = fx | 0,
+                    iy = fy | 0,
+                    tx = fx - ix,
+                    ty = fy - iy,
+                    q = iy * nx + ix,
+                    vx = (FU[q] * (1 - tx) + FU[q + 1] * tx) * (1 - ty) + (FU[q + nx] * (1 - tx) + FU[q + nx + 1] * tx) * ty,
+                    vy = (FV[q] * (1 - tx) + FV[q + 1] * tx) * (1 - ty) + (FV[q + nx] * (1 - tx) + FV[q + nx + 1] * tx) * ty,
+                    mag = Math.sqrt(vx * vx + vy * vy);
+                var x2 = x + vx * fs,
+                    y2 = y + vy * fs;
+                X[i] = x2;
+                Y[i] = y2;
+                if (mag < 0.004) continue; // angin tenang: partikel diam, tidak digambar
+                b = bucket(mag / KS);
+                bx0[b].push(x);
+                by0[b].push(y);
+                bx1[b].push(x2);
+                by1[b].push(y2);
+            }
+            ctx.lineWidth = dark ? 1.5 : 1.6;
+            for (b = 0; b < BK; b++) {
+                var n = bx0[b].length;
+                if (!n) continue;
+                ctx.globalAlpha = b === 0 ? 0.4 : 0.9;
+                ctx.strokeStyle = pal[b];
+                ctx.beginPath();
+                for (i = 0; i < n; i++) {
+                    ctx.moveTo(bx0[b][i], by0[b][i]);
+                    ctx.lineTo(bx1[b][i], by1[b][i]);
+                }
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            raf = requestAnimationFrame(frame);
+        }
+
+        function loop() {
+            if (!raf && on && visible && !moving && FU && !reduce) {
+                last = 0;
+                raf = requestAnimationFrame(frame);
+            }
+        }
+
+        function clear() {
+            if (ctx) ctx.clearRect(0, 0, W, H);
+        }
+
+        function rebuild() {
+            if (!on) return;
+            ensure();
+            resize();
+            buildField();
+            clear();
+            canvas.style.opacity = FU ? 1 : 0;
+            loop();
+        }
+
+        function onMoveStart() {
+            moving = true;
+            if (raf) {
+                cancelAnimationFrame(raf);
+                raf = 0;
+            }
+            if (canvas) canvas.style.opacity = 0;
+        }
+
+        function onMoveEnd() {
+            moving = false;
+            rebuild();
+        }
+        for (var b = 0; b < BK; b++) {
+            bx0.push([]);
+            by0.push([]);
+            bx1.push([]);
+            by1.push([]);
+        }
+
+        return {
+            start: function() {
+                if (on) return;
+                on = true;
+                moving = false;
+                ensure();
+                map.on('movestart', onMoveStart).on('moveend', onMoveEnd).on('resize', onMoveEnd).on('baselayerchange', clear);
+                if ('IntersectionObserver' in window) {
+                    io = new IntersectionObserver(function(en) {
+                        visible = en[0].isIntersecting;
+                        if (visible) loop();
+                        else if (raf) {
+                            cancelAnimationFrame(raf);
+                            raf = 0;
+                        }
+                    });
+                    io.observe(map.getContainer());
+                }
+                rebuild();
+            },
+            stop: function() {
+                on = false;
+                if (raf) cancelAnimationFrame(raf);
+                raf = 0;
+                map.off('movestart', onMoveStart).off('moveend', onMoveEnd).off('resize', onMoveEnd).off('baselayerchange', clear);
+                if (io) {
+                    io.disconnect();
+                    io = null;
+                }
+                if (canvas) {
+                    clear();
+                    canvas.style.opacity = 0;
+                }
+            },
+            setGrid: function(g) {
+                grid = g;
+                if (on) rebuild();
+            },
+            isOn: function() {
+                return on;
+            },
+            reduced: reduce
+        };
+    }
+
     /* ---------- komponen peta ---------- */
     function create(map, opt) {
         opt = opt || {};
@@ -795,38 +1280,44 @@
             return opt.active ? !!opt.active() : isOn();
         }
 
-        /* --- grid titik --- */
-        function points() {
-            var b = opt.bounds(),
-                pts;
-            if (!b || !b.isValid()) return [];
-            var span = Math.max(b.getNorth() - b.getSouth(), b.getEast() - b.getWest());
-            var step = Math.min(opt.step || 0.3, Math.max(0.05, span / 3)); // wilayah kecil -> grid lebih rapat
-            for (var guard = 0; guard < 8; guard++) {
-                pts = [];
-                var nLat = Math.max(1, Math.ceil((b.getNorth() - b.getSouth()) / step));
-                var nLng = Math.max(1, Math.ceil((b.getEast() - b.getWest()) / step));
-                for (var i = 0; i < nLat; i++) {
-                    for (var j = 0; j < nLng; j++) {
-                        var la = b.getSouth() + step * (i + 0.5),
-                            ln = b.getWest() + step * (j + 0.5);
-                        if (!opt.inside || opt.inside(la, ln)) pts.push({
-                            lat: +la.toFixed(3),
-                            lng: +ln.toFixed(3)
-                        });
-                    }
-                }
-                if (pts.length <= 60) break;
-                step *= 1.25;
+        /* --- grid & preferensi --- */
+        var prefs = {
+            flow: true,
+            arrows: false
+        };
+        try {
+            var sv = JSON.parse(localStorage.getItem('wkPrefs') || '{}');
+            if (typeof sv.flow === 'boolean') prefs.flow = sv.flow;
+            if (typeof sv.arrows === 'boolean') prefs.arrows = sv.arrows;
+        } catch (e) {}
+
+        function savePrefs() {
+            try {
+                localStorage.setItem('wkPrefs', JSON.stringify(prefs));
+            } catch (e) {}
+        }
+        var flow = opt.flow === false ? null : Flow(map, opt);
+        var arrows = L.layerGroup(),
+            curGrid = null,
+            inCache = {},
+            statEl = null;
+        if (!flow || flow.reduced) prefs.arrows = true; // tanpa animasi -> panah menjadi penanda utama
+
+        function isIn(la, ln) {
+            if (!opt.inside) return true;
+            var k = key(la, ln);
+            if (!(k in inCache)) inCache[k] = !!opt.inside(la, ln);
+            return inCache[k];
+        }
+
+        function applyPrefs() {
+            if (!isOn()) return;
+            if (prefs.arrows) group.addLayer(arrows);
+            else group.removeLayer(arrows);
+            if (flow) {
+                if (prefs.flow && !flow.reduced) flow.start();
+                else flow.stop();
             }
-            if (pts.length < 3) { // wilayah sempit: pakai titik tengah
-                var c = b.getCenter();
-                pts = [{
-                    lat: +c.lat.toFixed(3),
-                    lng: +c.lng.toFixed(3)
-                }];
-            }
-            return pts;
         }
 
         function addArrow(w) {
@@ -847,7 +1338,7 @@
                 minWidth: 256,
                 maxWidth: 270
             });
-            group.addLayer(m);
+            arrows.addLayer(m);
         }
 
         async function load(force) {
@@ -855,34 +1346,67 @@
             state = {
                 status: 'loading',
                 sum: state.sum,
-                err: null
+                err: null,
+                src: state.src
             };
             renderPanel();
+            renderStatus();
             try {
-                var pts = points();
-                if (!pts.length) throw new Error('Wilayah peta belum siap.');
-                if (force) pts.forEach(function(p) {
-                    cache.delete(key(p.lat, p.lng));
-                });
-                var ws = (await getMany(pts)).filter(Boolean);
+                var b = opt.bounds && opt.bounds();
+                if (!b || !b.isValid()) throw new Error('Wilayah peta belum siap.');
+                var sp = gridSpec(b, opt.step || 0.4, 80),
+                    ws, g = null,
+                    src = 'Open-Meteo';
+                try {
+                    if (force) sp.nodes.forEach(function(n) {
+                        cache.delete(key(n.lat, n.lng));
+                    });
+                    var res = await getMany(sp.nodes);
+                    if (my !== seq) return;
+                    ws = res.filter(Boolean);
+                    if (!ws.length) throw new Error('Data angin tidak tersedia saat ini.');
+                    g = gridFromNodes(sp, res);
+                } catch (e1) {
+                    if (my !== seq) return;
+                    if (opt.fallback) { // cadangan: prakiraan angin BMKG per desa (diinterpolasi ke grid)
+                        try {
+                            var fb = await opt.fallback();
+                            if (my !== seq) return;
+                            if (fb && fb.pts && fb.pts.length) {
+                                ws = fb.pts;
+                                g = gridFromScatter(sp, ws);
+                                src = fb.src || 'BMKG';
+                            }
+                        } catch (e2) {}
+                    }
+                    if (!g) throw e1;
+                }
                 if (my !== seq) return;
-                if (!ws.length) throw new Error('Data angin tidak tersedia saat ini.');
-                group.clearLayers();
-                ws.forEach(addArrow);
+                var inn = opt.inside ? ws.filter(function(w) {
+                    return isIn(w.lat, w.lng);
+                }) : ws;
+                if (!inn.length) inn = ws;
+                arrows.clearLayers();
+                inn.forEach(addArrow);
+                curGrid = g;
+                if (flow) flow.setGrid(g);
                 state = {
                     status: 'ok',
-                    sum: summary(ws),
-                    err: null
+                    sum: summary(inn),
+                    err: null,
+                    src: src
                 };
             } catch (e) {
                 if (my !== seq) return;
                 state = {
                     status: 'error',
                     sum: state.sum,
-                    err: (e && e.message) || 'Gagal memuat data angin.'
+                    err: (e && e.message) || 'Gagal memuat data angin.',
+                    src: state.src
                 };
             }
             renderPanel();
+            renderStatus();
             if (opt.onChange) opt.onChange(state);
         }
 
@@ -892,6 +1416,7 @@
             timer = setInterval(function() {
                 if (isOn()) load(true);
             }, REFRESH);
+            applyPrefs();
             sync();
         });
         group.on('remove', function() {
@@ -899,6 +1424,7 @@
             clearInterval(timer);
             timer = null;
             clearSpread();
+            if (flow) flow.stop();
             sync();
         });
 
@@ -909,29 +1435,69 @@
                 toggleEl.setAttribute('aria-pressed', isOn() ? 'true' : 'false');
             }
             if (panelEl) panelEl.style.display = isOn() ? '' : 'none';
+            if (statEl) statEl.style.display = isOn() ? '' : 'none';
+        }
+
+        function renderStatus() {
+            if (!statEl) return;
+            var s = state,
+                h;
+            if (s.status === 'error' && !curGrid) h = '<i class="bad"></i>Data angin tak tersedia.<button type="button" data-wk="reload">Coba lagi</button>';
+            else if (s.status === 'loading' && !curGrid) h = '<i class="wait"></i>Memuat data angin&hellip;';
+            else h = '<i class="' + (s.status === 'error' ? 'wait' : 'ok') + '"></i>Data angin tersedia' + (s.src ? ' &middot; ' + esc(s.src) : '') +
+                (s.sum ? ' &middot; ' + jam(s.sum.time) : '') + (s.status === 'loading' ? ' &middot; memperbarui&hellip;' : '') + (s.status === 'error' ? ' &middot; pembaruan gagal' : '');
+            statEl.innerHTML = h;
+            statEl.title = s.err || '';
         }
 
         function renderPanel() {
             if (!panelEl) return;
             var s = state,
-                h = '<div class="wk-ph"><span>Arah Angin</span><button type="button" data-wk="reload">Perbarui</button></div>';
-            if (s.sum) {
-                var f = compass(s.sum.dir),
-                    k = kelas(s.sum.speed),
-                    t = compass(toward(s.sum.dir));
-                h += '<div class="wk-top">' + rose(s.sum, 56) + '<div class="wk-main"><div style="font-weight:800">Dari ' + f.nama + ' (' + s.sum.dir.toFixed(0) + '&deg;)</div>' +
-                    '<div style="color:#64748b;font-size:11px">Menuju ' + t.nama + '</div>' +
-                    '<span class="wk-chip" style="background:' + k.color + '">' + fmt1(s.sum.speed) + ' km/jam &middot; ' + k.label + '</span></div></div>' +
-                    '<div class="wk-hint">Rata-rata ' + s.sum.n + ' titik &middot; pukul ' + jam(s.sum.time) + '</div>';
+                sm = s.sum,
+                h = '';
+            h += '<button type="button" class="wk-rf" data-wk="reload" title="Perbarui data angin" aria-label="Perbarui data angin">' + refreshIcon(14) + '</button>';
+            if (sm) {
+                var k = kelas(sm.speed),
+                    calm = sm.speed < 1;
+                h += compassSvg(sm, 104) +
+                    '<div class="wk-cc-t">Angin <b style="color:' + k.color + '">' + k.label.toLowerCase() + '</b></div>' +
+                    '<div class="wk-cc-s">' + (sm.speed / 3.6).toFixed(1) + ' m/s</div>' +
+                    (calm ? '' : '<div class="wk-cc-d">dari ' + compass(sm.dir).nama + ' &rarr; ' + compass(toward(sm.dir)).nama + '</div>');
+            } else if (s.status === 'error') {
+                h += '<div class="wk-err" style="padding:18px 4px">' + esc(s.err) + '</div>';
+            } else {
+                h += '<div class="wk-load" style="padding:36px 4px">Memuat data angin&hellip;</div>';
             }
-            if (s.status === 'loading' && !s.sum) h += '<div class="wk-load">Memuat data angin&hellip;</div>';
-            if (s.status === 'loading' && s.sum) h += '<div class="wk-hint">Memperbarui&hellip;</div>';
-            if (s.status === 'error') h += '<div class="wk-err">' + esc(s.err) + '</div>';
-            h += '<div class="wk-leg"><span><i style="background:#22c55e"></i>&lt;12</span><span><i style="background:#eab308"></i>12-19</span>' +
-                '<span><i style="background:#f97316"></i>20-28</span><span><i style="background:#dc2626"></i>&ge;29 km/jam</span></div>';
-            h += '<div class="wk-hint">' + (opt.click ? 'Klik titik mana pun di peta atau klik panah untuk cek arah angin.' : 'Klik panah untuk melihat detail angin.') + '</div>';
+            if (flow && !flow.reduced && sm) {
+                var pal = (opt.darkBase && opt.darkBase()) ? PAL_DARK : PAL_LIGHT;
+                h += '<div class="wk-ramp" style="background:linear-gradient(90deg,' + pal.join(',') + ')"></div>' +
+                    '<div class="wk-ramp-l"><span>0</span><span>5</span><span>10</span><span>14+ m/s</span></div>';
+            }
+            if (flow) h += '<div class="wk-tgs"><button type="button" class="wk-tg' + (prefs.flow ? ' on' : '') + '" data-wk="flow" aria-pressed="' + prefs.flow + '"' + (flow.reduced ? ' disabled title="Animasi dimatikan oleh pengaturan perangkat (kurangi gerakan)"' : '') + '>Aliran</button>' +
+                '<button type="button" class="wk-tg' + (prefs.arrows ? ' on' : '') + '" data-wk="arrows" aria-pressed="' + prefs.arrows + '">Panah</button></div>';
             panelEl.innerHTML = h;
         }
+
+        function onCtl(ev) {
+            var t = ev.target && ev.target.closest ? ev.target.closest('[data-wk]') : null;
+            if (!t || t.disabled) return;
+            var a = t.getAttribute('data-wk');
+            if (a === 'reload') load(true);
+            else if (a === 'flow') {
+                prefs.flow = !prefs.flow;
+                savePrefs();
+                applyPrefs();
+                renderPanel();
+            } else if (a === 'arrows') {
+                prefs.arrows = !prefs.arrows;
+                savePrefs();
+                applyPrefs();
+                renderPanel();
+            }
+        }
+        map.on('baselayerchange', function() {
+            renderPanel();
+        });
 
         if (opt.toggle !== false) {
             var Tg = L.Control.extend({
@@ -960,20 +1526,36 @@
                     position: opt.panelPos || 'bottomleft'
                 },
                 onAdd: function() {
-                    var d = L.DomUtil.create('div', 'wk-panel wk-dk');
+                    var d = L.DomUtil.create('div', 'wk-panel wk-dk wk-cc');
+                    d.setAttribute('role', 'group');
+                    d.setAttribute('aria-label', 'Arah dan kecepatan angin');
                     L.DomEvent.disableClickPropagation(d);
                     L.DomEvent.disableScrollPropagation(d);
-                    L.DomEvent.on(d, 'click', function(ev) {
-                        var t = ev.target;
-                        if (t && t.getAttribute && t.getAttribute('data-wk') === 'reload') load(true);
-                    });
+                    L.DomEvent.on(d, 'click', onCtl);
                     panelEl = d;
                     return d;
                 }
             });
             new Pn().addTo(map);
         }
+        if (opt.panel !== false) {
+            var St = L.Control.extend({
+                options: {
+                    position: 'bottomleft'
+                },
+                onAdd: function() {
+                    var d = L.DomUtil.create('div', 'wk-stat');
+                    d.setAttribute('role', 'status');
+                    L.DomEvent.disableClickPropagation(d);
+                    L.DomEvent.on(d, 'click', onCtl);
+                    statEl = d;
+                    return d;
+                }
+            });
+            new St().addTo(map);
+        }
         renderPanel();
+        renderStatus();
         sync();
 
         /* --- klik di peta --- */
@@ -1080,7 +1662,11 @@
             isOn: isOn,
             getSummary: function() {
                 return state.sum;
-            }
+            },
+            getGrid: function() {
+                return curGrid;
+            },
+            flow: flow
         };
     }
 
@@ -1134,7 +1720,12 @@
             parse: parse,
             detailHtml: detailHtml,
             popupHtml: popupHtml,
-            fmt1: fmt1
+            fmt1: fmt1,
+            gridSpec: gridSpec,
+            gridFromNodes: gridFromNodes,
+            gridFromScatter: gridFromScatter,
+            sampleGrid: sampleGrid,
+            uv: uv
         }
     };
 })();
@@ -8022,6 +8613,20 @@
             click: true,
             toggle: false,
             panelPos: 'topright',
+            flow: true, // animasi garis-garis partikel angin (dihitung dari grid data angin)
+            step: 0.4, // jarak grid data angin (derajat)
+            darkBase: function() { // pakai warna terang pada peta satelit
+                return map.hasLayer(satelliteLayer);
+            },
+            fallback: function() { // bila Open-Meteo gagal: pakai prakiraan angin BMKG per desa
+                return new Promise(function(res, rej) {
+                    (function w(n) {
+                        if (window.CuacaKit) return res(window.CuacaKit.windFallback());
+                        if (n > 50) return rej(new Error('Modul BMKG belum siap'));
+                        setTimeout(function() { w(n + 1); }, 100);
+                    })(0);
+                });
+            },
             active: function() {
                 return map.hasLayer(wind.group) || !!window.CloudOn;
             },
@@ -8030,10 +8635,13 @@
             }
         });
         L.control.layers(baseMaps, {
-            'Arah Angin (klik panah / peta)': wind.group
+            'Angin (aliran & panah)': wind.group
+        }, {
+            position: 'topleft' // pojok kanan atas dipakai kartu kompas angin + prakiraan hujan
         }).addTo(map);
         L.control.scale({
-            imperial: false
+            imperial: false,
+            position: 'bottomright'
         }).addTo(map);
 
         // Marker cluster: menjaga peta tetap ringan & mudah dibaca walau titik panas
@@ -8998,9 +9606,12 @@
     var cls = function(c, tp) { return (c === 95 || c === 97) ? 4 : c === 63 ? 3 : c === 61 ? 2 : (c === 60 || c === 80) ? 1 : tp >= 10 ? 3 : tp >= 5 ? 2 : tp >= 1 ? 1 : 0; };
     var rainG = L.layerGroup(), cloudG = L.layerGroup();
     var DATA = {}, TIMES = [], ti = 0, SRC = '', rainOn = false;
+    var SHOW = {'-1': true, 0: true, 1: true, 2: true, 3: true, 4: true}; // filter legenda (kelas: -1 = tanpa data, 0 = tidak hujan)
     var tz = {timeZone: 'Asia/Jakarta'};
     var hhmm = function(u) { return new Date(u).toLocaleTimeString('id-ID', Object.assign({hour: '2-digit', minute: '2-digit', hour12: false}, tz)).replace('.', ':') + ' WIB'; };
     var tgl = function(u) { return new Date(u).toLocaleDateString('id-ID', Object.assign({weekday: 'long', day: 'numeric', month: 'short'}, tz)); };
+    var wibIso = function(u) { return new Date(Date.parse(u) + 7 * 3600000).toISOString().slice(0, 16); };
+    var RCOL = window.innerWidth < 640, CCOL = RCOL; // di layar kecil kartu dimulai dalam keadaan terlipat
 
     /* ---------- data BMKG ---------- */
     function stepOf(k) { var d = DATA[k]; return d && d.s.filter(function(x) { return x[0] === TIMES[ti]; })[0] || null; }
@@ -9017,14 +9628,29 @@
         c.forEach(function(d) { d.forEach(function(s) { o.push([String(s.utc_datetime || s.datetime || '').replace(' ', 'T').replace(/Z?$/, 'Z'), s.t, s.hu, s.tp, s.tcc, s.weather, s.ws, s.wd_deg, s.vs]); }); });
         return o;
     }
-    var loading = null;
-    function load() {
-        if (loading) return loading;
-        loading = (async function() {
-            try { // jalur utama: Apps Script (diperbarui otomatis tiap jam)
+    // jalur cepat: Apps Script (Cuaca.gs, diperbarui otomatis tiap jam). Dipakai bersama oleh layer Hujan & cadangan data angin.
+    var fastP = null, fastAt = 0;
+    function loadFast() {
+        if (fastP && Date.now() - fastAt < 30 * 60000) return fastP;
+        fastAt = Date.now();
+        var p = fastP = (async function() {
+            try {
                 var r = await fetch(GAS_API_URL + '?action=cuaca&_=' + Date.now(), {cache: 'no-store'}), j = await r.json();
-                if (j && j.status === 'success' && j.villages && Object.keys(j.villages).length) { DATA = j.villages; SRC = 'BMKG · diperbarui ' + hhmm(j.updated); times(); restyle(); return; }
+                if (j && j.status === 'success' && j.villages && Object.keys(j.villages).length) {
+                    DATA = j.villages; SRC = 'BMKG · diperbarui ' + (j.updated ? hhmm(j.updated) : '-'); times(); restyle(); return true;
+                }
             } catch (e) {}
+            return false;
+        })();
+        p.then(function(ok) { if (!ok && fastP === p) fastAt = Date.now() - 25 * 60000; }); // gagal -> coba lagi 5 menit kemudian
+        return p;
+    }
+    var loading = null, loadAt = 0;
+    function load() {
+        if (loading && Date.now() - loadAt < 30 * 60000) return loading;
+        loadAt = Date.now();
+        loading = (async function() {
+            if (await loadFast()) return;
             // cadangan: langsung dari API BMKG (bertahap, dibatasi 60 permintaan/menit)
             var cache = {}, fail = 0, n = 0;
             try { cache = JSON.parse(localStorage.getItem('bmkgCuaca') || '{}'); } catch (e) {}
@@ -9047,16 +9673,35 @@
         return loading;
     }
 
+    // cadangan data angin: prakiraan BMKG (ws km/jam, wd_deg arah asal) per desa pada langkah waktu terdekat dengan sekarang
+    function windFallback() {
+        return loadFast().then(function(ok) {
+            if (!ok) throw new Error('Data BMKG tidak tersedia');
+            var now = Date.now(), pts = [];
+            geoJsonLayer.eachLayer(function(l) {
+                var d = l.feature && DATA[l.feature.properties.kode]; if (!d || !d.s.length) return;
+                var s = null, bd = 1e18;
+                d.s.forEach(function(x) { var dd = Math.abs(Date.parse(x[0]) - now); if (dd < bd) { bd = dd; s = x; } });
+                if (!s || s[6] == null || s[7] == null || isNaN(+s[6]) || isNaN(+s[7])) return;
+                var c = l.getBounds().getCenter();
+                pts.push({lat: c.lat, lng: c.lng, speed: +s[6], dir: +s[7], time: wibIso(s[0])});
+            });
+            if (!pts.length) throw new Error('Data angin BMKG kosong');
+            return {src: 'BMKG', pts: pts};
+        });
+    }
+
     /* ---------- warna poligon ---------- */
+    function klass(f) { var st = stepOf(f.properties.kode); return st ? cls(st[5], st[3]) : -1; }
     function styleFn(f) {
         var b = styleFeature(f);
         if (!rainOn) return b;
-        var st = stepOf(f.properties.kode), c = st ? cls(st[5], st[3]) : -1;
-        return c < 0 ? {fillColor: '#9ca3af', fillOpacity: .5, color: '#fff', weight: 1, opacity: 1} :
-            c === 0 ? {fillColor: '#fff', fillOpacity: 0, color: '#94a3b8', weight: 1, opacity: 1} :
-            {fillColor: RC[c].c, fillOpacity: .75, color: '#fff', weight: 1.5, opacity: 1};
+        var c = klass(f), on = SHOW[c];
+        return c < 0 ? (on ? {fillColor: '#9ca3af', fillOpacity: .5, color: '#fff', weight: 1, opacity: 1} : {fillOpacity: 0, color: '#fff', weight: 1, opacity: .15}) :
+            c === 0 ? {fillColor: '#fff', fillOpacity: 0, color: '#94a3b8', weight: 1, opacity: on ? 1 : .12} :
+            on ? {fillColor: RC[c].c, fillOpacity: .75, color: '#fff', weight: 1.5, opacity: 1} : {fillColor: RC[c].c, fillOpacity: 0, color: RC[c].c, weight: 1, opacity: .3};
     }
-    function restyle() { geoJsonLayer.options.style = styleFn; if (geoJsonLayer.setStyle) geoJsonLayer.setStyle(styleFn); panelRain(); }
+    function restyle() { geoJsonLayer.options.style = styleFn; if (geoJsonLayer.setStyle) geoJsonLayer.setStyle(styleFn); panelRain(); if (tbl && tbl.open) renderTable(); }
 
     function rainPopup(l) {
         var p = l.feature.properties, st = stepOf(p.kode), c = st ? cls(st[5], st[3]) : 0;
@@ -9082,20 +9727,122 @@
         l.bindPopup(function() { return rainOn ? rainPopup(l) : base; }, {className: 'hotspot-popup', minWidth: 256});
     });
 
-    /* ---------- panel hujan ---------- */
+    /* ---------- kartu peta (kontrol Leaflet) ---------- */
     var rainEl, cloudEl;
-    function ctl(pos, cb) { var C = L.Control.extend({options: {position: pos}, onAdd: function() { var d = L.DomUtil.create('div', 'wk-panel wk-dk'); d.style.display = 'none'; L.DomEvent.disableClickPropagation(d); L.DomEvent.on(d, 'click', function(e) { var a = e.target.closest && e.target.closest('[data-a]'); if (a) cb(a.getAttribute('data-a')); }); return d; }}); var c = new C(); c.addTo(map); return c._el; }
+    function ctl(pos, cls_, cb, onChange) {
+        var C = L.Control.extend({options: {position: pos}, onAdd: function() {
+            var d = L.DomUtil.create('div', 'wk-panel wk-dk ' + cls_); d.style.display = 'none';
+            L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+            L.DomEvent.on(d, 'click', function(e) { var a = e.target.closest && e.target.closest('[data-a]'); if (a && !a.disabled) cb(a.getAttribute('data-a'), e, a); });
+            if (onChange) L.DomEvent.on(d, 'change', function(e) { onChange(e.target); });
+            return d;
+        }});
+        var c = new C(); c.addTo(map); return c._container;
+    }
+    var chev = function(c) { return '<button type="button" class="cd-col" data-a="col" aria-label="' + (c ? 'Bentangkan kartu' : 'Lipat kartu') + '" aria-expanded="' + !c + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(' + (c ? 180 : 0) + 'deg)"><path d="M6 15l6-6 6 6"/></svg></button>'; };
+    var SW = function(c, label, k, extra) {
+        return '<label class="rn-lg' + (SHOW[k] ? '' : ' off') + '"><input type="checkbox" data-c="' + k + '"' + (SHOW[k] ? ' checked' : '') + '><span class="rn-sw" style="--c:' + c + (extra || '') + '"></span>' + label + '</label>';
+    };
     function panelRain() {
         if (!rainEl) return;
-        var n = 0, tot = GEOJSON.features.length, none = 0;
-        GEOJSON.features.forEach(function(f) { var s = stepOf(f.properties.kode); if (s) { n++; if (cls(s[5], s[3])) none++; } });
-        var leg = RC.slice(1).map(function(x) { return '<span><i style="background:' + x.c + '"></i>' + x.n.replace('Hujan ', '') + '</span>'; }).join('');
-        rainEl.innerHTML = '<div class="wk-ph"><span>Prakiraan Hujan</span><span class="wk-chip" style="background:#2563eb">BMKG</span></div>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><button data-a="p" ' + (ti <= 0 ? 'disabled' : '') + ' class="wk-step">◀</button><div style="text-align:center"><b style="font-size:14px">' + (TIMES[ti] ? hhmm(TIMES[ti]) : '—') + '</b><div class="wk-hint" style="margin:0">' + (TIMES[ti] ? tgl(TIMES[ti]) : '') + '</div></div><button data-a="n" ' + (ti >= TIMES.length - 1 ? 'disabled' : '') + ' class="wk-step">▶</button></div>' +
-            '<div class="wk-leg">' + leg + '<span><i style="background:#fff;border:1px solid #94a3b8"></i>Tidak hujan</span><span><i style="background:#9ca3af"></i>Tanpa data</span></div>' +
-            (n ? '<div class="wk-hint">Hujan di <b>' + none + '</b> dari ' + n + ' desa/kelurahan</div>' : '') +
-            '<div class="wk-hint">' + (SRC || 'Memuat data BMKG…') + '</div><div class="wk-hint">Klik kelurahan di peta untuk rincian.</div>';
+        var n = 0, rainy = 0;
+        GEOJSON.features.forEach(function(f) { var s = stepOf(f.properties.kode); if (s) { n++; if (cls(s[5], s[3])) rainy++; } });
+        rainEl.classList.toggle('cd-collapsed', RCOL); fit();
+        rainEl.innerHTML = '<div class="wk-ph"><span class="rn-t"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 17.5a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6 10a4 4 0 0 0 .5 7.9"/><path d="M8 19v2M12 19v2M16 19v2"/></svg>Prakiraan Hujan</span><span style="display:flex;align-items:center;gap:6px"><span class="wk-chip" style="background:#2563eb">BMKG</span>' + chev(RCOL) + '</span></div>' +
+            '<div class="rn-time"><button data-a="p" ' + (ti <= 0 ? 'disabled' : '') + ' class="rn-nav" aria-label="Waktu sebelumnya">◀</button><div style="text-align:center"><b class="rn-clock">' + (TIMES[ti] ? hhmm(TIMES[ti]) : '—') + '</b><div class="wk-hint" style="margin:0">' + (TIMES[ti] ? tgl(TIMES[ti]) : '') + '</div></div><button data-a="n" ' + (ti >= TIMES.length - 1 ? 'disabled' : '') + ' class="rn-nav" aria-label="Waktu berikutnya">▶</button></div>' +
+            '<div class="cd-body"><div class="rn-grid">' + SW(RC[1].c, 'Ringan', 1) + SW(RC[2].c, 'Sedang', 2) + SW(RC[3].c, 'Lebat', 3) + SW(RC[4].c, 'Petir', 4) + '</div>' +
+            '<div class="rn-rows">' + SW('#fff', 'Tanpa warna: tidak hujan', 0, ';--b:#94a3b8') + SW('#cbd5e1', 'Abu–abu: data tidak tersedia', -1, ';--b:#9ca3af') + '</div>' +
+            '<div class="wk-hint rn-sum">' + (n ? 'Hujan di <b>' + rainy + '</b> dari ' + n + ' desa/kelurahan' : (SRC || 'Memuat data BMKG…')) + (n && SRC ? '<br>' + esc(SRC) : '') + '</div>' +
+            '<button type="button" class="rn-btn" data-a="tbl">📋 Lihat tabel data</button>' +
+            '<div class="wk-hint" style="text-align:center">Klik kelurahan di peta untuk rincian</div></div>';
     }
+    function rainAct(a) {
+        if (a === 'p' && ti > 0) ti--; else if (a === 'n' && ti < TIMES.length - 1) ti++;
+        else if (a === 'col') RCOL = !RCOL;
+        else if (a === 'tbl') { openTable(); return; }
+        restyle();
+    }
+    function rainChg(el) { var k = el && el.getAttribute && el.getAttribute('data-c'); if (k == null) return; SHOW[k] = el.checked; restyle(); }
+
+    /* ---------- tabel data (modal) ---------- */
+    var tbl = {open: false, q: '', kec: '', f: 'all', sk: 'kec', sd: 1, el: null, last: null};
+    var COLS = [['kec', 'Kecamatan'], ['desa', 'Desa/Kelurahan'], ['cuaca', 'Cuaca'], ['tp', 'Hujan (mm)'], ['t', 'Suhu (°C)'], ['hu', 'Lembap (%)'], ['tcc', 'Awan (%)'], ['ws', 'Angin (km/jam)']];
+    function rowsOf() {
+        return GEOJSON.features.map(function(f) {
+            var p = f.properties, st = stepOf(p.kode), c = st ? cls(st[5], st[3]) : -1;
+            return {c: c, kec: p.kecamatan || '', desa: (p.jenis ? p.jenis + ' ' : '') + p.desa, nama: p.desa, st: st,
+                cuaca: st ? (WC[st[5]] || 'Cuaca') : '', tp: st ? +st[3] : null, t: st ? +st[1] : null, hu: st ? +st[2] : null, tcc: st ? +st[4] : null, ws: st ? +st[6] : null, wd: st ? +st[7] : null};
+        });
+    }
+    function viewRows() {
+        var q = tbl.q.trim().toLowerCase(), r = rowsOf().filter(function(x) {
+            if (tbl.kec && x.kec !== tbl.kec) return false;
+            if (tbl.f === 'rain' && !(x.c > 0)) return false;
+            if (tbl.f === 'dry' && x.c !== 0) return false;
+            if (tbl.f === 'none' && x.c !== -1) return false;
+            return !q || (x.desa + ' ' + x.kec + ' ' + x.cuaca).toLowerCase().indexOf(q) >= 0;
+        });
+        var k = tbl.sk, d = tbl.sd;
+        r.sort(function(a, b) {
+            var x = a[k], y = b[k];
+            if (x == null || x === '') return 1; if (y == null || y === '') return -1; // data kosong selalu di bawah
+            var v = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'id');
+            return (v || a.desa.localeCompare(b.desa, 'id')) * d;
+        });
+        return r;
+    }
+    function ensureTable() {
+        if (tbl.el) return;
+        var m = document.createElement('div'); m.className = 'rn-modal'; m.hidden = true;
+        m.innerHTML = '<div class="rn-dlg" role="dialog" aria-modal="true" aria-labelledby="rn-ttl"><div class="rn-hd"><div><h3 id="rn-ttl">Tabel Prakiraan Hujan BMKG</h3><div class="rn-sub" id="rn-sub"></div></div><button type="button" class="rn-x" data-t="x" aria-label="Tutup">✕</button></div>' +
+            '<div class="rn-tools"><button type="button" class="rn-nav" data-t="p" aria-label="Waktu sebelumnya">◀</button><b id="rn-when"></b><button type="button" class="rn-nav" data-t="n" aria-label="Waktu berikutnya">▶</button>' +
+            '<input type="search" id="rn-q" placeholder="Cari desa / kecamatan…" aria-label="Cari"><select id="rn-kec" aria-label="Kecamatan"></select>' +
+            '<select id="rn-f" aria-label="Filter hujan"><option value="all">Semua</option><option value="rain">Hujan</option><option value="dry">Tidak hujan</option><option value="none">Tanpa data</option></select>' +
+            '<button type="button" class="rn-btn rn-csv" data-t="csv">⬇ CSV</button></div><div class="rn-wrap"><table class="rn-tb"><thead id="rn-th"></thead><tbody id="rn-tbd"></tbody></table></div><div class="rn-ft" id="rn-ft"></div></div>';
+        document.body.appendChild(m); tbl.el = m;
+        var kk = Array.from(new Set(GEOJSON.features.map(function(f) { return f.properties.kecamatan; }))).sort();
+        m.querySelector('#rn-kec').innerHTML = '<option value="">Semua kecamatan</option>' + kk.map(function(x) { return '<option>' + esc(x) + '</option>'; }).join('');
+        m.addEventListener('click', function(e) {
+            if (e.target === m) return closeTable();
+            var b = e.target.closest('[data-t]'), th = e.target.closest('th[data-k]');
+            if (th) { var k = th.getAttribute('data-k'); if (tbl.sk === k) tbl.sd = -tbl.sd; else { tbl.sk = k; tbl.sd = 1; } return renderTable(); }
+            if (!b) return; var a = b.getAttribute('data-t');
+            if (a === 'x') closeTable(); else if (a === 'csv') csv();
+            else { if (a === 'p' && ti > 0) ti--; else if (a === 'n' && ti < TIMES.length - 1) ti++; restyle(); }
+        });
+        m.querySelector('#rn-q').addEventListener('input', function(e) { tbl.q = e.target.value; renderTable(); });
+        m.querySelector('#rn-kec').addEventListener('change', function(e) { tbl.kec = e.target.value; renderTable(); });
+        m.querySelector('#rn-f').addEventListener('change', function(e) { tbl.f = e.target.value; renderTable(); });
+        document.addEventListener('keydown', function(e) { if (tbl.open && e.key === 'Escape') closeTable(); });
+    }
+    function openTable() {
+        ensureTable(); tbl.open = true; tbl.last = document.activeElement; tbl.el.hidden = false; document.documentElement.classList.add('rn-lock');
+        renderTable(); tbl.el.querySelector('.rn-x').focus(); load();
+    }
+    function closeTable() { tbl.open = false; if (tbl.el) tbl.el.hidden = true; document.documentElement.classList.remove('rn-lock'); if (tbl.last && tbl.last.focus) tbl.last.focus(); }
+    function dirTxt(x) { return x.ws == null || x.wd == null ? '-' : '<span class="rn-ar" style="transform:rotate(' + WindKit.toward(x.wd) + 'deg)">↑</span> ' + x.ws + ' <small>dari ' + WindKit.compass(x.wd).abbr + '</small>'; }
+    function renderTable() {
+        if (!tbl.el) return;
+        var r = viewRows(), m = tbl.el, all = rowsOf(), rainy = all.filter(function(x) { return x.c > 0; }).length, nodata = all.filter(function(x) { return x.c === -1; }).length;
+        m.querySelector('#rn-when').textContent = TIMES[ti] ? hhmm(TIMES[ti]) + ' · ' + tgl(TIMES[ti]) : 'Memuat…';
+        m.querySelector('#rn-sub').textContent = (SRC || 'Memuat data BMKG…');
+        m.querySelectorAll('[data-t=p]')[0].disabled = ti <= 0; m.querySelectorAll('[data-t=n]')[0].disabled = ti >= TIMES.length - 1;
+        m.querySelector('#rn-th').innerHTML = '<tr><th class="rn-c0"></th>' + COLS.map(function(c) { return '<th data-k="' + c[0] + '" aria-sort="' + (tbl.sk === c[0] ? (tbl.sd > 0 ? 'ascending' : 'descending') : 'none') + '">' + c[1] + (tbl.sk === c[0] ? (tbl.sd > 0 ? ' ▲' : ' ▼') : '') + '</th>'; }).join('') + '</tr>';
+        m.querySelector('#rn-tbd').innerHTML = r.length ? r.map(function(x) {
+            var col = x.c > 0 ? RC[x.c].c : x.c === 0 ? '#e2e8f0' : '#9ca3af';
+            return '<tr><td class="rn-c0"><i style="background:' + col + '"></i></td><td>' + esc(x.kec) + '</td><td><b>' + esc(x.desa) + '</b></td><td>' + (x.st ? ico(x.st[5]) + ' ' + esc(x.cuaca) : '<span class="rn-na">Tidak ada data</span>') + '</td><td>' + (x.tp == null ? '-' : x.tp) + '</td><td>' + (x.t == null ? '-' : x.t) + '</td><td>' + (x.hu == null ? '-' : x.hu) + '</td><td>' + (x.tcc == null ? '-' : x.tcc) + '</td><td>' + dirTxt(x) + '</td></tr>';
+        }).join('') : '<tr><td colspan="9" class="rn-na" style="text-align:center;padding:24px">Tidak ada data yang cocok.</td></tr>';
+        m.querySelector('#rn-ft').textContent = 'Menampilkan ' + r.length + ' dari ' + all.length + ' desa/kelurahan · hujan di ' + rainy + ' · tanpa data ' + nodata;
+    }
+    function csv() {
+        var q = function(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+        var lines = [['Kecamatan', 'Desa/Kelurahan', 'Waktu', 'Cuaca', 'Hujan (mm)', 'Suhu (C)', 'Kelembapan (%)', 'Tutupan awan (%)', 'Angin (km/jam)', 'Arah angin (derajat, asal)'].map(q).join(',')];
+        viewRows().forEach(function(x) { lines.push([x.kec, x.desa, TIMES[ti] ? hhmm(TIMES[ti]) + ' ' + tgl(TIMES[ti]) : '', x.cuaca, x.tp, x.t, x.hu, x.tcc, x.ws, x.wd].map(q).join(',')); });
+        var a = document.createElement('a'), u = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'}));
+        a.href = u; a.download = 'prakiraan-hujan-bmkg-' + (TIMES[ti] ? wibIso(TIMES[ti]).replace(/[-:]/g, '').replace('T', '-') : 'data') + '.csv';
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(function() { URL.revokeObjectURL(u); }, 2000);
+    }
+
     /* ---------- awan Himawari-9 (NASA GIBS) ---------- */
     var GIBS = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Himawari_AHI_Band13_Clean_Infrared/default/';
     var iso = function(t) { return new Date(t).toISOString().slice(0, 19) + 'Z'; };
@@ -9114,15 +9861,33 @@
         })();
         return cloudInit;
     }
+    var PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>', PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+    // kerangka kartu dibuat sekali; saat animasi hanya teks/lebar bar yang diperbarui supaya klik tombol tidak hilang
+    function buildCloud() {
+        if (!cloudEl) return;
+        cloudEl.classList.toggle('cd-collapsed', CCOL);
+        cloudEl.innerHTML = '<div class="wk-ph"><span>Awan</span><span style="display:flex;align-items:center;gap:6px"><b class="cl-time">—</b>' + chev(CCOL) + '</span></div>' +
+            '<div class="cd-body"><div class="cl-row"><button type="button" class="cl-play" data-a="pl" aria-label="Jeda/putar animasi awan"></button><div class="cl-txt"></div></div>' +
+            '<div class="cl-bar" data-a="seek" role="slider" aria-label="Pilih bingkai waktu awan" tabindex="0"><i class="cl-fill"></i></div>' +
+            '<div class="cl-grad"></div><div class="wk-leg" style="justify-content:space-between;margin-top:3px"><span>awan</span><span>hujan</span><span>badai</span></div></div>';
+        showFrame();
+    }
     function showFrame() {
         frames.forEach(function(f, i) { if (f.layer.setOpacity) f.layer.setOpacity(i === fi ? .8 : 0); });
         if (!cloudEl || !frames.length) return;
-        var age = Math.round((Date.now() - frames[fi].t) / 60000);
-        cloudEl.innerHTML = '<div class="wk-ph"><span>Awan</span><b>' + hhmm(frames[fi].t) + '</b></div>' +
-            '<div style="display:flex;align-items:center;gap:8px"><button data-a="pl" class="wk-step">' + (playing ? '❚❚' : '▶') + '</button><div class="wk-hint" style="margin:0">Himawari-9 · ' + (fi + 1) + '/' + frames.length + ' · ±' + age + ' menit lalu</div></div>' +
-            '<div style="height:4px;border-radius:2px;background:#cbd5e1;margin:8px 0"><div style="height:4px;border-radius:2px;background:#0d9488;width:' + ((fi + 1) / frames.length * 100) + '%"></div></div>' +
-            '<div style="height:6px;border-radius:3px;background:linear-gradient(90deg,#e5e7eb,#60a5fa,#22c55e,#facc15,#ef4444,#7c3aed)"></div><div class="wk-leg" style="justify-content:space-between;margin-top:3px"><span>awan</span><span>hujan</span><span>badai</span></div>' +
-            '<div class="wk-hint">Klik titik di peta untuk tutupan awan & angin.</div>';
+        var q = function(s) { return cloudEl.querySelector(s); }, age = Math.round((Date.now() - frames[fi].t) / 60000);
+        if (!q('.cl-time')) return;
+        q('.cl-time').textContent = hhmm(frames[fi].t);
+        q('.cl-txt').innerHTML = '<b>Himawari-9</b> · ' + (fi + 1) + '/' + frames.length + ' · ±' + age + ' menit lalu';
+        q('.cl-play').innerHTML = playing ? PAUSE : PLAY;
+        q('.cl-fill').style.width = ((fi + 1) / frames.length * 100) + '%';
+        q('.cl-bar').setAttribute('aria-valuenow', fi + 1); q('.cl-bar').setAttribute('aria-valuemax', frames.length);
+    }
+    function cloudAct(a, e, el) {
+        if (a === 'pl') playing = !playing;
+        else if (a === 'seek' && frames.length) { var r = el.getBoundingClientRect(); fi = Math.max(0, Math.min(frames.length - 1, Math.round((e.clientX - r.left) / r.width * (frames.length - 1)))); playing = false; }
+        else if (a === 'col') { CCOL = !CCOL; buildCloud(); return; }
+        showFrame();
     }
     function tick() { if (playing && frames.length) { fi = (fi + 1) % frames.length; showFrame(); } }
     cloudG.on('add', function() {
@@ -9136,10 +9901,48 @@
     });
     rainG.on('add', function() { rainOn = true; if (rainEl) rainEl.style.display = ''; restyle(); load(); });
     rainG.on('remove', function() { rainOn = false; if (rainEl) rainEl.style.display = 'none'; restyle(); });
-    rainEl = ctl('topright', function(a) { if (a === 'p' && ti > 0) ti--; if (a === 'n' && ti < TIMES.length - 1) ti++; restyle(); });
-    cloudEl = ctl('bottomleft', function(a) { if (a === 'pl') { playing = !playing; showFrame(); } });
+    rainEl = ctl('topright', 'rn-card', rainAct, rainChg);   // ditambahkan setelah kompas angin -> tepat di bawahnya
+    cloudEl = ctl('bottomleft', 'cl-card', cloudAct);        // pojok kiri bawah, di atas keterangan status data angin
+    panelRain(); buildCloud();
+    // batasi tinggi kartu agar tidak keluar dari bingkai peta (kartu bisa digulir bila ruang sempit)
+    var fitQ = 0;
+    function fit() {
+        if (fitQ) return; fitQ = requestAnimationFrame(function() {
+            fitQ = 0; var g = gis.getBoundingClientRect();
+            if (rainEl && rainEl.offsetParent) rainEl.style.maxHeight = Math.max(150, g.height - (rainEl.getBoundingClientRect().top - g.top) - 14) + 'px';
+            if (cloudEl && cloudEl.offsetParent) cloudEl.style.maxHeight = Math.max(120, g.height - 70) + 'px';
+        });
+    }
+    if (window.ResizeObserver) { var ro = new ResizeObserver(fit); ro.observe(gis); var cc = gis.querySelector('.wk-cc'); if (cc) ro.observe(cc); }
+    window.addEventListener('resize', fit); rainG.on('add', fit); cloudG.on('add', fit); wind.group.on('add remove', fit);
     var st = document.createElement('style');
-    st.textContent = '.wk-step{width:30px;height:30px;border-radius:8px;border:1px solid #cbd5e1;background:#f8fafc;color:#0f172a;cursor:pointer;font-size:12px}.wk-step:disabled{opacity:.4;cursor:default}.dark .wk-step{background:#1e293b;color:#f1f5f9;border-color:#475569}.map-chip{padding:5px 12px;border-radius:999px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:12px;font-weight:700;cursor:pointer}.map-chip.on{background:#0d9488;border-color:#0d9488;color:#fff}.dark .map-chip:not(.on){background:#1e293b;color:#cbd5e1;border-color:#475569}';
+    st.textContent = '.rn-card{width:252px;padding:12px}.cl-card{width:260px;padding:12px}.rn-card,.cl-card{box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain}' +
+        '.rn-card .wk-ph,.cl-card .wk-ph{margin-bottom:8px;font-size:14px}.rn-t{display:flex;align-items:center;gap:6px}' +
+        '.cd-col{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:#64748b;cursor:pointer;padding:0}.cd-col:hover{background:rgba(100,116,139,.18)}.cd-col svg{transition:transform .2s}' +
+        '.cd-collapsed .cd-body{display:none}.cd-collapsed .wk-ph{margin-bottom:0}.cd-collapsed .rn-time{margin-top:8px}' +
+        '.rn-time{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 6px;border-radius:12px;border:1px solid #dbe4f0;background:#f1f5fb;margin-bottom:10px}.dark .rn-time{background:#1e293b;border-color:#334155}' +
+        '.rn-clock{font-size:16px}.rn-nav{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:#2563eb;cursor:pointer;font-size:11px}.rn-nav:hover:not(:disabled){background:rgba(37,99,235,.12)}.rn-nav:disabled{opacity:.35;cursor:default}' +
+        '.rn-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-bottom:6px}.rn-rows{display:grid;gap:6px;margin-bottom:8px}' +
+        '.rn-lg{display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;user-select:none}.rn-lg input{position:absolute;opacity:0;width:0;height:0}' +
+        '.rn-sw{flex:none;width:16px;height:16px;border-radius:4px;background:var(--c);border:1.5px solid var(--b,var(--c));box-sizing:border-box}' +
+        '.rn-lg.off{opacity:.5;text-decoration:line-through}.rn-lg.off .rn-sw{background:transparent}.rn-lg input:focus-visible+.rn-sw{outline:2px solid #2563eb;outline-offset:2px}' +
+        '.rn-sum{margin:2px 0 10px;line-height:1.45}' +
+        '.rn-btn{display:block;width:100%;padding:11px 12px;border:0;border-radius:12px;background:#2f6fe4;color:#fff;font:700 13px system-ui,sans-serif;cursor:pointer;margin-bottom:6px}.rn-btn:hover{background:#1d4ed8}' +
+        '.cl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}.cl-play{flex:none;width:40px;height:40px;border:0;border-radius:11px;background:#52627a;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}.cl-play:hover{background:#3d4b60}.cl-txt{font-size:11.5px;color:#64748b;line-height:1.35}.cl-txt b{color:#0f172a}.dark .cl-txt b{color:#f1f5f9}' +
+        '.cl-bar{height:6px;border-radius:3px;background:#cbd5e1;margin:0 0 10px;cursor:pointer;position:relative}.cl-fill{display:block;height:6px;border-radius:3px;background:#52627a}.dark .cl-bar{background:#334155}.dark .cl-fill{background:#94a3b8}' +
+        '.cl-grad{height:6px;border-radius:3px;background:linear-gradient(90deg,#e5e7eb,#60a5fa,#22c55e,#facc15,#ef4444,#7c3aed)}' +
+        '.map-chip{padding:5px 12px;border-radius:999px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:12px;font-weight:700;cursor:pointer}.map-chip.on{background:#0d9488;border-color:#0d9488;color:#fff}.dark .map-chip:not(.on){background:#1e293b;color:#cbd5e1;border-color:#475569}' +
+        '@media(max-width:480px){.rn-card{width:210px;padding:10px}.cl-card{width:208px;padding:10px}.rn-clock{font-size:14px}}' +
+        '.rn-lock{overflow:hidden}.rn-modal{position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:12px}.rn-modal[hidden]{display:none}' +
+        '.rn-dlg{width:min(980px,100%);max-height:calc(100vh - 24px);display:flex;flex-direction:column;border-radius:16px;background:#fff;color:#0f172a;box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden;font:13px/1.4 system-ui,sans-serif}.dark .rn-dlg{background:#0f172a;color:#f1f5f9}' +
+        '.rn-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px 6px}.rn-hd h3{font-size:16px;font-weight:800;margin:0}.rn-sub{font-size:11px;color:#64748b}.rn-x{border:0;background:transparent;font-size:16px;cursor:pointer;color:#64748b;padding:4px 8px;border-radius:8px}.rn-x:hover{background:rgba(100,116,139,.18)}' +
+        '.rn-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px 10px}.rn-tools input,.rn-tools select{padding:7px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:inherit;font-size:12.5px}.dark .rn-tools input,.dark .rn-tools select{background:#1e293b;border-color:#475569}.rn-tools input{flex:1;min-width:150px}' +
+        '.rn-tools .rn-btn{width:auto;margin:0;padding:8px 14px}' +
+        '.rn-wrap{overflow:auto;border-top:1px solid #e2e8f0;flex:1;min-height:120px}.dark .rn-wrap{border-color:#334155}' +
+        '.rn-tb{width:100%;border-collapse:collapse;font-size:12.5px}.rn-tb th{position:sticky;top:0;background:#f1f5f9;text-align:left;padding:8px 10px;font-size:11.5px;cursor:pointer;white-space:nowrap;user-select:none}.dark .rn-tb th{background:#1e293b}' +
+        '.rn-tb td{padding:7px 10px;border-top:1px solid #eef2f7;white-space:nowrap}.dark .rn-tb td{border-color:#1e293b}.rn-tb tbody tr:hover{background:rgba(37,99,235,.06)}' +
+        '.rn-c0{width:10px;padding:0 0 0 8px!important;cursor:default!important}.rn-c0 i{display:block;width:8px;height:22px;border-radius:3px}.rn-na{color:#94a3b8}.rn-ar{display:inline-block;color:#2563eb;font-weight:800}.rn-tb small{color:#94a3b8}' +
+        '.rn-ft{padding:8px 16px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0}.dark .rn-ft{border-color:#334155}';
     document.head.appendChild(st);
 
     /* ---------- chip layer di atas peta ---------- */
@@ -9148,11 +9951,11 @@
     gis.parentNode.insertBefore(bar, gis);
     [['Desa/Kelurahan', geoJsonLayer], ['Titik Panas', hotspotGroup], ['Angin', wind.group], ['Awan', cloudG], ['Hujan', rainG]].forEach(function(c) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'map-chip'; b.textContent = c[0]; bar.appendChild(b);
-        var sync = function() { b.classList.toggle('on', map.hasLayer(c[1])); };
+        var sync = function() { b.classList.toggle('on', map.hasLayer(c[1])); b.setAttribute('aria-pressed', map.hasLayer(c[1])); };
         c[1].on('add remove', sync); sync();
         b.addEventListener('click', function() { if (map.hasLayer(c[1])) map.removeLayer(c[1]); else map.addLayer(c[1]); });
     });
-    window.CuacaKit = {rainLayer: rainG, cloudLayer: cloudG};
+    window.CuacaKit = {rainLayer: rainG, cloudLayer: cloudG, windFallback: windFallback};
 })();
 
     </script>
