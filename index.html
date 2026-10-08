@@ -342,10 +342,10 @@
                 </div>
                 <i data-lucide="chevron-right" class="stat-go"></i>
             </article>
-            <article id="pm-card" class="stat-card stat-click" style="--c1:#0284c7;--c2:#38bdf8" role="button" tabindex="0" aria-label="Lihat ISPU per desa">
+            <article id="pm-card" class="stat-card stat-click" style="--c1:#0284c7;--c2:#38bdf8" role="button" tabindex="0" aria-label="Lihat ISPU Kabupaten Katingan dan rincian per desa">
                 <div class="stat-ico"><i data-lucide="gauge"></i></div>
                 <div class="stat-body">
-                    <h3 class="stat-lbl">ISPU Kualitas Udara</h3>
+                    <h3 class="stat-lbl">ISPU Kab. Katingan</h3>
                     <p class="stat-val"><span id="pm-val">–</span></p>
                     <p class="stat-sub"><span id="pm-chip"></span> <span id="pm-sub">Memuat…</span></p>
                 </div>
@@ -10779,15 +10779,24 @@
         var k = $('rk-kecamatan').value, d = $('rk-village').value;
         return VIL.filter(function (v) { return (!k || v.kec === k) && (!d || v.desa === d); });
     }
+    /* Kartu atas = ISPU tingkat Kabupaten Katingan (tidak mengikuti filter kecamatan/desa):
+       konsentrasi tiap parameter dirata-rata seluruh desa/kelurahan, lalu diambil sub-indeks tertinggi (parameter dominan). */
     function cardPM() {
-        var val = $('pm-val'), sub = $('pm-sub'), cc = $('pm-chip'); if (!val) return;
-        if (!PM.ok) { val.textContent = '–'; sub.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
-        var arr = pool().map(function (v) { var s = stat(PM.v[v.kode]); return s && s.isp != null ? { v: v, s: s } : null; }).filter(Boolean);
-        if (!arr.length) { val.textContent = '–'; sub.textContent = 'Tidak ada data di wilayah ini'; cc.innerHTML = ''; return; }
-        var mean = Math.round(arr.reduce(function (a, b) { return a + b.s.isp; }, 0) / arr.length), top = arr.reduce(function (a, b) { return b.s.isp > a.s.isp ? b : a; });
-        val.innerHTML = mean.toLocaleString('id-ID') + ' <small>ISPU</small>';
-        cc.innerHTML = chip(cat(mean), true);
-        sub.textContent = arr.length > 1 ? 'Tertinggi: ' + top.v.desa + ' (' + top.s.isp.toLocaleString('id-ID') + ') · ' + top.s.dom.n : 'Dominan: ' + top.s.dom.n;
+        var val = $('pm-val'), sub_ = $('pm-sub'), cc = $('pm-chip'); if (!val) return;
+        if (!PM.ok) { val.textContent = '–'; sub_.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
+        var all = VIL.map(function (v) { return stat(PM.v[v.kode]); }).filter(function (s) { return s && s.isp != null; });
+        if (!all.length) { val.textContent = '–'; sub_.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
+        var best = null;
+        PARAMS.forEach(function (p, j) {
+            var xs = all.map(function (s) { return s.par[j].ref; }).filter(function (x) { return x != null; });
+            if (!xs.length) return;
+            var m = xs.reduce(function (a, b) { return a + b; }, 0) / xs.length, sb = sub(m, p.bp);
+            if (sb != null && (!best || sb > best.sb)) best = { n: p.n, sb: sb };
+        });
+        if (!best) { val.textContent = '–'; sub_.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
+        val.innerHTML = best.sb.toLocaleString('id-ID') + ' <small>ISPU</small>';
+        cc.innerHTML = chip(cat(best.sb), true);
+        sub_.textContent = 'Dominan: ' + best.n + ' · ' + all.length + ' desa/kel.';
     }
     function ispaCalc(kec) {
         var l = ISPA.filter(function (r) { return !kec || r.kec === kec; });
