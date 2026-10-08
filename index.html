@@ -474,7 +474,7 @@
                     <button id="pm-next" type="button" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Berikutnya &rarr;</button>
                 </div>
             </div>
-            <p class="text-[11px] text-slate-400 leading-relaxed"><b>Kategori ISPU (Kementerian LHK):</b> 0–50 Baik · 51–100 Sedang · 101–200 Tidak Sehat · 201–300 Sangat Tidak Sehat · di atas 300 Berbahaya. Nilai ISPU adalah <b>sub-indeks tertinggi</b> dari parameter yang tersedia (parameter dominan) menurut Permen LHK No. 14 Tahun 2020 (PM10, PM2.5, SO₂: rata-rata 24 jam; CO dan O₃: 8 jam; NO₂: 1 jam) dan <b>tidak dibatasi 500</b>, sehingga dapat melampaui 500 saat konsentrasi sangat tinggi. HC tidak tersedia pada model CAMS (±40 km), jadi nilai ini estimasi model dan dapat berbeda dari stasiun pemantau DLH.</p>
+            <p class="text-[11px] text-slate-400 leading-relaxed"><b>Kategori ISPU (Kementerian LHK):</b> 0–50 Baik · 51–100 Sedang · 101–200 Tidak Sehat · 201–300 Sangat Tidak Sehat · di atas 300 Berbahaya. Nilai ISPU adalah <b>sub-indeks tertinggi</b> dari parameter yang tersedia (parameter dominan) menurut Permen LHK No. 14 Tahun 2020 (PM10, PM2.5, SO₂: rata-rata 24 jam; CO dan O₃: 8 jam; NO₂: 1 jam) dan <b>tidak dibatasi 500</b>, sehingga dapat melampaui 500 saat konsentrasi sangat tinggi (mis. 1.012 pada stasiun DLH). HC tidak tersedia pada model CAMS (±40 km), jadi nilai ini estimasi model dan dapat berbeda dari stasiun pemantau DLH.</p>
         </section>
     </main>
 
@@ -550,14 +550,6 @@
                         <p>PM10, PM2.5, SO₂, CO, O₃, dan NO₂ per desa/kelurahan dari model kualitas udara global CAMS (Copernicus) via Open-Meteo Air Quality API, lalu dikonversi menjadi indeks ISPU (Permen LHK No. 14/2020). HC tidak tersedia; acuan resmi tetap stasiun pemantau DLH.</p>
                         <div class="sm"><span>±40 km · per jam</span><span>ISPU dari 6 parameter</span><span>Diperbarui: <b id="src-pm-upd">-</b></span></div>
                         <a href="https://atmosphere.copernicus.eu" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" class="w-3 h-3"></i>atmosphere.copernicus.eu</a>
-                    </div>
-                </article>
-                <article class="src-card" style="--c1:#0369a1;--c2:#38bdf8">
-                    <div class="si"><i data-lucide="gauge"></i></div>
-                    <div class="min-w-0">
-                        <h4>ISPU Resmi Kabupaten (BMKG / DLH)</h4>
-                        <p>Nilai ISPU tingkat Kabupaten Katingan pada kartu di atas peta, diinput petugas dari rilis resmi BMKG, DLH, atau ISPUNet KLHK. Tidak tersedia API publik yang dapat ditarik otomatis; bila belum ada input, kartu memakai estimasi CAMS.</p>
-                        <div class="sm"><span>Nilai bisa &gt; 500</span><span>Rilis terakhir: <b id="src-kab-upd">belum ada data</b></span></div>
                     </div>
                 </article>
                 <article class="src-card" style="--c1:#7c3aed;--c2:#a78bfa">
