@@ -555,9 +555,9 @@
                 <article class="src-card" style="--c1:#0369a1;--c2:#38bdf8">
                     <div class="si"><i data-lucide="gauge"></i></div>
                     <div class="min-w-0">
-                        <h4>ISPU Resmi Kabupaten (BMKG / DLH)</h4>
-                        <p>Nilai ISPU tingkat Kabupaten Katingan pada kartu di atas peta, diinput petugas dari rilis resmi BMKG, DLH, atau ISPUNet KLHK. Tidak tersedia API publik yang dapat ditarik otomatis; bila belum ada input, kartu memakai estimasi CAMS.</p>
-                        <div class="sm"><span>Nilai bisa &gt; 500</span><span>Rilis terakhir: <b id="src-kab-upd">belum ada data</b></span></div>
+                        <h4>ISPU Kabupaten Katingan (Kasongan)</h4>
+                        <p>Nilai ISPU pada kartu di atas peta mewakili Kabupaten Katingan, dihitung dari data model CAMS di ibukota kabupaten, Kasongan (Kel. Kasongan Baru dan Kasongan Lama, Kec. Katingan Hilir). Diambil sub-indeks tertinggi dari 6 parameter sesuai Permen LHK No. 14/2020. Ini estimasi model, bukan rilis resmi stasiun DLH/BMKG, sehingga dapat berbeda.</p>
+                        <div class="sm"><span>Titik acuan: Kasongan</span><span>Nilai bisa &gt; 500</span><span>Diperbarui: <b id="src-kab-upd">-</b></span></div>
                     </div>
                 </article>
                 <article class="src-card" style="--c1:#7c3aed;--c2:#a78bfa">
@@ -10794,8 +10794,6 @@
        konsentrasi tiap parameter dirata-rata seluruh desa/kelurahan, lalu diambil sub-indeks tertinggi (parameter dominan). */
     function kabTime(w) { var m = /(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(w || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 7 * 36e5 : NaN; }
     function kabWaktu(w) { var m = /(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(w || ''); return m ? (+m[3]) + ' ' + BLN3[+m[2] - 1] + ' ' + m[1] + ' · ' + m[4] + '.' + m[5] + ' WIB' : (w || '-'); }
-    /* Kartu di atas peta = ISPU TINGKAT KABUPATEN KATINGAN (tidak terpengaruh filter).
-       Sumber utama: nilai resmi (BMKG/DLH/ISPUNet) yang diinput admin. Cadangan: estimasi CAMS bila belum ada input. */
     /* ISPU tingkat Kabupaten Katingan: konsentrasi tiap parameter dirata-rata se-kabupaten,
        lalu diambil sub-indeks tertinggi (parameter dominan). Tidak dipengaruhi filter kecamatan/desa. */
     function kabISPU() {
@@ -10826,13 +10824,18 @@
         var d = $('kab-det'); if (d) d.onclick = function () { close(); $('kualitas-udara').scrollIntoView({ behavior: 'smooth' }); };
         $('kab-x').focus();
     }
+    /* Kartu ISPU kabupaten: mewakili Kabupaten Katingan = ibukota Kasongan (Kec. Katingan Hilir).
+       Kasongan terdiri dari Kelurahan Kasongan Baru & Kasongan Lama; dipakai yang tertinggi. Tidak ikut filter wilayah. */
+    var IBUKOTA = ['62.06.02.1003', '62.06.02.1004'];
     function cardPM() {
         var val = $('pm-val'), sub = $('pm-sub'), cc = $('pm-chip'); if (!val) return;
-        var k = PM.ok ? kabISPU() : null;
-        if (!k) { val.textContent = '–'; sub.textContent = PM.ok ? 'Data ISPU belum tersedia' : 'Memuat data ISPU…'; cc.innerHTML = ''; return; }
-        val.innerHTML = k.isp.toLocaleString('id-ID') + ' <small>ISPU</small>';
-        cc.innerHTML = chip(k.c, true);
-        sub.textContent = 'Dominan ' + k.dom.n + ' (' + fv(k.mean, k.dom.k) + ' µg/m³)';
+        if (!PM.ok) { val.textContent = '–'; sub.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
+        var best = null;
+        IBUKOTA.forEach(function (k) { var s = stat(PM.v[k]); if (s && s.isp != null && (!best || s.isp > best.isp)) best = s; });
+        if (!best) { val.textContent = '–'; sub.textContent = 'Data Kasongan belum tersedia'; cc.innerHTML = ''; return; }
+        val.innerHTML = best.isp.toLocaleString('id-ID') + ' <small>ISPU</small>';
+        cc.innerHTML = chip(best.c, true);
+        sub.textContent = 'Kasongan · Dominan: ' + best.dom.n;
     }
     function ispaCalc(kec) {
         var l = ISPA.filter(function (r) { return !kec || r.kec === kec; });
@@ -10886,6 +10889,7 @@
         renderDetail();
         $('pm-upd').textContent = PM.upd ? wibS(PM.upd) : '-';
         var su = $('src-pm-upd'); if (su) su.textContent = PM.upd ? wibS(PM.upd) : 'belum tersedia';
+        var sk = $('src-kab-upd'); if (sk) sk.textContent = PM.upd ? wibS(PM.upd) : 'belum tersedia';
     }
     function csv(name, head, rows) {
         var q = function (v) { v = v == null ? '' : String(v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
