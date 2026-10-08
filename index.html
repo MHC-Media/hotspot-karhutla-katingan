@@ -218,7 +218,7 @@
                 </button>
 
                 <!-- Tombol Refresh Tampilan -->
-                <button id="btn-refresh-data" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer">
+                <button id="btn-refresh-data" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
@@ -10772,9 +10772,16 @@
             try { localStorage.setItem(key, JSON.stringify({ t: now, v: out })); } catch (e) { }
         });
     }
+    /* Data server lama (sebelum Udara.gs diperbarui) hanya berisi PM2.5. Jika parameter lain tidak ada,
+       ambil langsung dari Open-Meteo agar PM10, SO2, CO, O3, dan NO2 tetap tampil. */
+    function adaLengkap(v) { return Object.keys(v || {}).some(function (k) { var x = v[k] && v[k].x; return x && x.p10 && x.p10.length; }); }
     async function loadPM() {
-        try { var j = await getJSON(G + '?action=pm25&_=' + Date.now()); if (j.status === 'success' && j.count > 0) { PM.v = j.villages; PM.upd = j.updated; PM.src = 'server'; PM.ok = true; return; } } catch (e) { }
-        try { await pmDirect(); PM.ok = true; } catch (e) { PM.ok = false; console.warn('PM2.5 tidak dapat dimuat', e); }
+        var srv = null;
+        try { var j = await getJSON(G + '?action=pm25&_=' + Date.now()); if (j.status === 'success' && j.count > 0) srv = j; } catch (e) { }
+        if (srv && adaLengkap(srv.villages)) { PM.v = srv.villages; PM.upd = srv.updated; PM.src = 'server'; PM.ok = true; PM.full = true; return; }
+        try { await pmDirect(); PM.ok = true; PM.full = adaLengkap(PM.v); if (PM.full) return; } catch (e) { console.warn('Data parameter lengkap tidak dapat dimuat langsung', e); }
+        if (srv) { PM.v = srv.villages; PM.upd = srv.updated; PM.src = 'server'; PM.ok = true; PM.full = false; return; }
+        PM.ok = false;
     }
     async function loadKab() {
         try { var j = await getJSON(G + '?action=ispu_kab&_=' + Date.now()); if (j.status === 'success') KAB = j.daftar || []; } catch (e) { }
@@ -10827,7 +10834,7 @@
             '<div>' + lb('KONSENTRASI DI LOKASI TERTINGGI (µg/m³) · sesuai waktu rata-rata tiap parameter') + grid + tiles(top, false) + '</div></div>' +
             (av ? '<div class="pt-3 border-t border-dashed border-slate-200 dark:border-slate-700"><div class="flex flex-wrap items-center justify-between gap-2 mb-1.5"><div class="text-[11px] font-bold text-slate-500 dark:text-slate-400">RATA-RATA KONSENTRASI KABUPATEN KATINGAN (µg/m³)</div>' + chip(av.c, true) + '</div><div class="text-[11px] text-slate-400 mb-2">Rata-rata dari ' + av.n + ' desa/kelurahan · ISPU dari rata-rata: <b class="text-slate-600 dark:text-slate-200">' + av.isp.toLocaleString('id-ID') + '</b> (dominan ' + E(av.dom.n) + ')</div>' + grid + tiles(av, false) + '</div></div>' : '') +
             '<div class="flex flex-wrap gap-2"><button type="button" id="kab-map" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-white bg-sky-600 hover:bg-sky-700"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>Lihat lokasi di peta</button><button type="button" id="kab-det" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"><i data-lucide="list" class="w-3.5 h-3.5"></i>Lihat per desa/kelurahan</button></div>';
-        h += '<p class="text-[11px] text-slate-400">ISPU = sub-indeks tertinggi dari parameter tersedia (Permen LHK 14/2020), tidak dibatasi 500. HC tidak tersedia pada model CAMS. Estimasi model (±40 km), dapat berbeda dari stasiun pemantau DLH.</p></div>';
+        h += '<p class="text-[11px] text-slate-400">' + (PM.full ? '' : '<b class="text-amber-600">Parameter selain PM2.5 belum termuat (server belum diperbarui dan sumber langsung tidak dapat dijangkau).</b> ') + 'ISPU = sub-indeks tertinggi dari parameter tersedia (Permen LHK 14/2020). HC tidak tersedia pada model CAMS. Estimasi model (±40 km), dapat berbeda dari stasiun pemantau DLH.</p></div>';
         m.innerHTML = h; document.body.appendChild(m);
         var close = function () { m.remove(); document.removeEventListener('keydown', esc); }, esc = function (e) { if (e.key === 'Escape') close(); };
         $('kab-x').onclick = close; m.addEventListener('click', function (e) { if (e.target === m) close(); }); document.addEventListener('keydown', esc);
