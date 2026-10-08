@@ -167,7 +167,6 @@
         #map-chips .map-chip:hover{transform:translateY(-1px)}
         #map-chips .map-chip:focus-visible{outline:2px solid #0d9488;outline-offset:2px}
         @media (max-width:480px){#map-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}#map-chips::-webkit-scrollbar{display:none}#map-chips .map-chip{flex:none}}
-        .pm-row-tr.sel{background:rgba(14,165,233,.14)}
 
     </style>
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
@@ -342,10 +341,10 @@
                 </div>
                 <i data-lucide="chevron-right" class="stat-go"></i>
             </article>
-            <article id="pm-card" class="stat-card stat-click" style="--c1:#0284c7;--c2:#38bdf8" role="button" tabindex="0" aria-label="Lihat ISPU Kabupaten Katingan dan rincian per desa">
-                <div class="stat-ico"><i data-lucide="gauge"></i></div>
+            <article id="pm-card" class="stat-card stat-click" style="--c1:#0284c7;--c2:#38bdf8" role="button" tabindex="0" aria-label="Lihat ISPU per desa">
+                <div class="stat-ico"><i data-lucide="wind"></i></div>
                 <div class="stat-body">
-                    <h3 class="stat-lbl">ISPU Kab. Katingan</h3>
+                    <h3 class="stat-lbl">PM2.5 (Model CAMS)</h3>
                     <p class="stat-val"><span id="pm-val">–</span></p>
                     <p class="stat-sub"><span id="pm-chip"></span> <span id="pm-sub">Memuat…</span></p>
                 </div>
@@ -431,7 +430,7 @@
                     <div class="stat-ico" style="--c1:#0284c7;--c2:#38bdf8"><i data-lucide="gauge"></i></div>
                     <div>
                         <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Indeks Standar Pencemar Udara (ISPU) per Desa/Kelurahan</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Model CAMS (Copernicus): PM10, PM2.5, SO₂, CO, O₃, NO₂ · µg/m³ · diperbarui <b id="pm-upd" class="text-slate-500 dark:text-slate-300">-</b></p>
+                        <p class="text-xs text-slate-400 mt-0.5">Dihitung dari PM2.5 model CAMS (Copernicus) · µg/m³ · diperbarui <b id="pm-upd" class="text-slate-500 dark:text-slate-300">-</b></p>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -441,8 +440,6 @@
             </div>
 
             <div id="pm-sum" class="flex flex-wrap gap-2" aria-label="Ringkasan kategori"></div>
-
-            <div id="pm-detail" class="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 dark:border-slate-700 dark:bg-slate-800/40" aria-live="polite"></div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <select id="pm-kec" aria-label="Filter kecamatan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none dark:bg-slate-800 dark:border-slate-600"></select>
@@ -455,10 +452,10 @@
                         <tr id="pm-head" class="bg-sky-50 text-sky-900 border-b border-sky-100 font-semibold text-xs dark:bg-slate-800 dark:text-sky-300 dark:border-slate-700">
                             <th class="py-2.5 px-3 rounded-l-xl" data-k="desa" aria-sort="none">Desa/Kelurahan<span class="ar"></span></th>
                             <th class="py-2.5 px-3" data-k="kec" aria-sort="none">Kecamatan<span class="ar"></span></th>
-                            <th class="py-2.5 px-3 hidden sm:table-cell" data-k="p10" aria-sort="none">PM10<span class="ar"></span></th>
-                            <th class="py-2.5 px-3 hidden sm:table-cell" data-k="p25" aria-sort="none">PM2.5<span class="ar"></span></th>
+                            <th class="py-2.5 px-3" data-k="cur" aria-sort="none">PM2.5 sekarang<span class="ar"></span></th>
+                            <th class="py-2.5 px-3 hidden sm:table-cell" data-k="avg" aria-sort="none">Rata-rata 24 jam<span class="ar"></span></th>
+                            <th class="py-2.5 px-3 hidden lg:table-cell" data-k="max" aria-sort="none">Puncak 24 jam ke depan<span class="ar"></span></th>
                             <th class="py-2.5 px-3" data-k="isp" aria-sort="none">ISPU<span class="ar"></span></th>
-                            <th class="py-2.5 px-3 hidden md:table-cell">Dominan</th>
                             <th class="py-2.5 px-3 rounded-r-xl">Kategori</th>
                         </tr>
                     </thead>
@@ -474,7 +471,7 @@
                     <button id="pm-next" type="button" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Berikutnya &rarr;</button>
                 </div>
             </div>
-            <p class="text-[11px] text-slate-400 leading-relaxed"><b>Kategori ISPU (Kementerian LHK):</b> 0–50 Baik · 51–100 Sedang · 101–200 Tidak Sehat · 201–300 Sangat Tidak Sehat · di atas 300 Berbahaya. Nilai ISPU adalah <b>sub-indeks tertinggi</b> dari parameter yang tersedia (parameter dominan) menurut Permen LHK No. 14 Tahun 2020 (PM10, PM2.5, SO₂: rata-rata 24 jam; CO dan O₃: 8 jam; NO₂: 1 jam) dan <b>tidak dibatasi 500</b>, sehingga dapat melampaui 500 saat konsentrasi sangat tinggi (mis. 1.012 pada stasiun DLH). HC tidak tersedia pada model CAMS (±40 km), jadi nilai ini estimasi model dan dapat berbeda dari stasiun pemantau DLH.</p>
+            <p class="text-[11px] text-slate-400 leading-relaxed"><b>Kategori ISPU (Kementerian LHK):</b> 0–50 Baik · 51–100 Sedang · 101–200 Tidak Sehat · 201–300 Sangat Tidak Sehat · di atas 300 Berbahaya. Nilai dihitung dari PM2.5 rata-rata 24 jam (µg/m³) menurut Permen LHK No. 14 Tahun 2020. ISPU resmi mengambil nilai tertinggi dari 7 parameter (PM10, PM2.5, CO, NO₂, SO₂, O₃, HC); dashboard ini hanya memakai PM2.5 dari model CAMS (±40 km, estimasi, bukan sensor lokal) sehingga bersifat indikatif. Klik baris untuk melihatnya di peta.</p>
         </section>
     </main>
 
@@ -547,17 +544,9 @@
                     <div class="si"><i data-lucide="wind"></i></div>
                     <div class="min-w-0">
                         <h4>Copernicus CAMS</h4>
-                        <p>PM10, PM2.5, SO₂, CO, O₃, dan NO₂ per desa/kelurahan dari model kualitas udara global CAMS (Copernicus) via Open-Meteo Air Quality API, lalu dikonversi menjadi indeks ISPU (Permen LHK No. 14/2020). HC tidak tersedia; acuan resmi tetap stasiun pemantau DLH.</p>
-                        <div class="sm"><span>±40 km · per jam</span><span>ISPU dari 6 parameter</span><span>Diperbarui: <b id="src-pm-upd">-</b></span></div>
+                        <p>PM2.5 per desa/kelurahan dari model kualitas udara global CAMS (Copernicus Atmosphere Monitoring Service) via Open-Meteo Air Quality API, lalu dikonversi menjadi indeks ISPU (Permen LHK No. 14/2020).</p>
+                        <div class="sm"><span>±40 km · per jam</span><span>ISPU dari PM2.5</span><span>Diperbarui: <b id="src-pm-upd">-</b></span></div>
                         <a href="https://atmosphere.copernicus.eu" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" class="w-3 h-3"></i>atmosphere.copernicus.eu</a>
-                    </div>
-                </article>
-                <article class="src-card" style="--c1:#0369a1;--c2:#38bdf8">
-                    <div class="si"><i data-lucide="gauge"></i></div>
-                    <div class="min-w-0">
-                        <h4>ISPU Kabupaten Katingan (Kasongan)</h4>
-                        <p>Nilai ISPU pada kartu di atas peta mewakili Kabupaten Katingan, dihitung dari data model CAMS di ibukota kabupaten, Kasongan (Kel. Kasongan Baru dan Kasongan Lama, Kec. Katingan Hilir). Diambil sub-indeks tertinggi dari 6 parameter sesuai Permen LHK No. 14/2020. Ini estimasi model, bukan rilis resmi stasiun DLH/BMKG, sehingga dapat berbeda.</p>
-                        <div class="sm"><span>Titik acuan: Kasongan</span><span>Nilai bisa &gt; 500</span><span>Diperbarui: <b id="src-kab-upd">-</b></span></div>
                     </div>
                 </article>
                 <article class="src-card" style="--c1:#7c3aed;--c2:#a78bfa">
@@ -10694,29 +10683,17 @@
         { k: 'sangat', n: 'Sangat Tidak Sehat', max: 300, rg: '201 – 300', pm: '150,5 – 250,4', c: '#dc2626', bg: '#fee2e2', tx: '#991b1b' },
         { k: 'bahaya', n: 'Berbahaya', max: Infinity, rg: '> 300', pm: '> 250,4', c: '#111827', bg: '#e5e7eb', tx: '#111827' }
     ];
-    /* Sub-indeks per parameter (Permen LHK No. 14/2020). Batas atas tiap kategori (ug/m3) dan waktu rata-rata.
-       Nilai di atas batas 500 TIDAK dipotong: segmen terakhir (301-500) diperpanjang linear, sehingga ISPU dapat > 500 (mis. 1012). */
-    var PARAMS = [
-        { k: 'p10', n: 'PM10', h: 24, bp: [50, 150, 350, 420, 500] },
-        { k: 'p25', n: 'PM2.5', h: 24, bp: [15.5, 55.4, 150.4, 250.4, 500] },
-        { k: 'so2', n: 'SO₂', h: 24, bp: [52, 180, 400, 800, 1200] },
-        { k: 'co', n: 'CO', h: 8, bp: [4000, 8000, 15000, 30000, 45000] },
-        { k: 'o3', n: 'O₃', h: 8, bp: [120, 235, 400, 800, 1000] },
-        { k: 'no2', n: 'NO₂', h: 1, bp: [80, 200, 1130, 2260, 3000] },
-        { k: 'hc', n: 'HC', h: 3, bp: null }   /* HC tidak tersedia pada model CAMS */
-    ], LO = [0, 50, 100, 200, 300], HI = [50, 100, 200, 300, 500];
-    function sub(x, bp) {
-        if (x == null || isNaN(x) || x < 0 || !bp) return null;
-        var i = 0; while (i < 4 && x > bp[i]) i++;
-        var xl = i ? bp[i - 1] : 0;
-        return Math.ceil((HI[i] - LO[i]) / (bp[i] - xl) * (x - xl) + LO[i] - 1e-9);
+    var BP = [[0, 0], [15.5, 50], [55.4, 100], [150.4, 200], [250.4, 300], [500, 500]];
+    /* pembulatan ke atas agar selaras dengan batas kategori */
+    function ispu(pm) {
+        if (pm == null || isNaN(pm) || pm < 0) return null;
+        if (pm >= 500) return 500;
+        for (var i = 1; i < BP.length; i++) if (pm <= BP[i][0]) { var a = BP[i - 1], b = BP[i]; return Math.ceil((b[1] - a[1]) / (b[0] - a[0]) * (pm - a[0]) + a[1] - 1e-9); }
+        return 500;
     }
-    function ispu(pm) { return sub(pm, PARAMS[1].bp); }
     function cat(idx) { if (idx == null || isNaN(idx)) return null; for (var i = 0; i < CATS.length; i++) if (idx <= CATS[i].max) return CATS[i]; return CATS[4]; }
     function f1(v) { return v == null || isNaN(v) ? '–' : (Math.round(v * 10) / 10).toFixed(1); }
     function chip(c, small) { return c ? '<span class="pm-chip" style="background:' + c.bg + ';color:' + c.tx + ';' + (small ? 'font-size:10px;padding:1px 7px' : '') + '"><i style="background:' + c.c + '"></i>' + E(c.n) + '</span>' : '<span class="text-slate-400 text-xs">Belum ada data</span>'; }
-    function fv(v, k) { return v == null || isNaN(v) ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: k === 'co' ? 0 : 2, minimumFractionDigits: k === 'co' ? 0 : 1 }); }
-    var SEL = '';
     function tglS(s) { var m = /(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? (+m[3]) + ' ' + BLN3[+m[2] - 1] + ' ' + m[1] : (s || '-'); }
     function wibS(iso) { if (!iso) return '-'; var t = Date.parse(iso); if (isNaN(t)) return '-'; var d = new Date(t + 7 * 36e5), p = function (n) { return String(n).padStart(2, '0'); }; return d.getUTCDate() + ' ' + BLN3[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ' · ' + p(d.getUTCHours()) + '.' + p(d.getUTCMinutes()) + ' WIB'; }
 
@@ -10726,43 +10703,32 @@
         try { var r = await fetch(url, { signal: ac.signal, cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
         finally { clearTimeout(t); }
     }
-    var PM = { v: {}, upd: null, src: '', ok: false }, ISPA = [], ISPA_OK = false, KAB = [];
+    var PM = { v: {}, upd: null, src: '', ok: false }, ISPA = [], ISPA_OK = false;
     var VIL = GEOJSON.features.filter(function (f) { return f.properties.kode; }).map(function (f) { return { kode: f.properties.kode, desa: f.properties.desa, kec: f.properties.kecamatan, jenis: f.properties.jenis || 'Desa', f: f }; });
 
     function parseT0(t0) { var m = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(t0 || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 7 * 36e5 : NaN; }
-    function series(o, k) { return k === 'p25' ? o.v : (o.x ? o.x[k] : null); }
-    function winAvg(a, i, h) {
-        if (!a) return null; var s = 0, n = 0;
-        for (var k = Math.max(0, i - h + 1); k <= i; k++) if (a[k] != null) { s += a[k]; n++; }
-        return n >= (h === 1 ? 1 : Math.min(h, 6)) ? s / n : null;
-    }
     function stat(o) {
         if (!o || !o.v || !o.v.length) return null;
         var t0 = parseT0(o.t0); if (isNaN(t0)) return null;
-        var i = Math.max(0, Math.min(o.v.length - 1, Math.floor((Date.now() - t0) / 36e5))), k, mx = null, best = null;
-        var par = PARAMS.map(function (p) {
-            var a = series(o, p.k), cur = a ? a[i] : null, w = winAvg(a, i, p.h), ref = w != null ? w : (cur != null ? cur : null);
-            return { k: p.k, n: p.n, h: p.h, cur: cur, ref: ref, sub: sub(ref, p.bp) };
-        });
-        par.forEach(function (p) { if (p.sub != null && (!best || p.sub > best.sub)) best = p; });
+        var i = Math.max(0, Math.min(o.v.length - 1, Math.floor((Date.now() - t0) / 36e5))), s = 0, n = 0, mx = null, k;
+        for (k = Math.max(0, i - 23); k <= i; k++) if (o.v[k] != null) { s += o.v[k]; n++; }
         for (k = i; k <= Math.min(o.v.length - 1, i + 24); k++) if (o.v[k] != null && (mx == null || o.v[k] > mx)) mx = o.v[k];
-        var isp = best ? best.sub : null;
-        return { i: i, cur: par[1].cur, avg: winAvg(o.v, i, 24), max: mx, ref: par[1].ref, isp: isp, dom: best, par: par, c: cat(isp) };
+        var avg = n >= 6 ? s / n : null, ref = avg != null ? avg : o.v[i], isp = ispu(ref);
+        return { i: i, cur: o.v[i], avg: avg, max: mx, ref: ref, isp: isp, c: cat(isp) };
     }
     function pmDirect() {
-        var key = 'ispuDirect2', now = Date.now();
+        var key = 'pm25Direct', now = Date.now();
         try { var c = JSON.parse(localStorage.getItem(key) || 'null'); if (c && now - c.t < 45 * 6e4) { PM.v = c.v; PM.upd = new Date(c.t).toISOString(); PM.src = 'langsung'; return Promise.resolve(); } } catch (e) { }
         var cs = VIL.map(function (v) { var p = turf.centerOfMass(v.f).geometry.coordinates; return { lat: p[1], lng: p[0] }; }), jobs = [], out = {};
         for (var s = 0; s < VIL.length; s += 40) (function (s) {
             var part = cs.slice(s, s + 40);
             var url = OM + '?latitude=' + part.map(function (c) { return c.lat.toFixed(4); }).join(',') + '&longitude=' + part.map(function (c) { return c.lng.toFixed(4); }).join(',') +
-                '&hourly=pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&past_days=1&forecast_days=2&timezone=Asia%2FJakarta&domains=cams_global';
+                '&hourly=pm2_5&past_days=1&forecast_days=2&timezone=Asia%2FJakarta&domains=cams_global';
             jobs.push(getJSON(url, 25000).then(function (j) {
                 if (!Array.isArray(j)) j = [j];
                 j.forEach(function (r, k) {
                     var h = r && r.hourly, v = VIL[s + k]; if (!h || !h.pm2_5 || !v) return;
-                    var rd = function (a, d) { var m = Math.pow(10, d); return (a || []).map(function (x) { return x == null ? null : Math.round(x * m) / m; }); };
-                    out[v.kode] = { d: v.desa, k: v.kec, t0: h.time[0], v: rd(h.pm2_5, 1), x: { p10: rd(h.pm10, 1), co: rd(h.carbon_monoxide, 0), no2: rd(h.nitrogen_dioxide, 1), so2: rd(h.sulphur_dioxide, 1), o3: rd(h.ozone, 1) } };
+                    out[v.kode] = { d: v.desa, k: v.kec, t0: h.time[0], v: h.pm2_5.map(function (x) { return x == null ? null : Math.round(x * 10) / 10; }) };
                 });
             }));
         })(s);
@@ -10776,9 +10742,6 @@
         try { var j = await getJSON(G + '?action=pm25&_=' + Date.now()); if (j.status === 'success' && j.count > 0) { PM.v = j.villages; PM.upd = j.updated; PM.src = 'server'; PM.ok = true; return; } } catch (e) { }
         try { await pmDirect(); PM.ok = true; } catch (e) { PM.ok = false; console.warn('PM2.5 tidak dapat dimuat', e); }
     }
-    async function loadKab() {
-        try { var j = await getJSON(G + '?action=ispu_kab&_=' + Date.now()); if (j.status === 'success') KAB = j.daftar || []; } catch (e) { }
-    }
     async function loadISPA() {
         try { var j = await getJSON(G + '?action=ispa&_=' + Date.now()); if (j.status === 'success') { ISPA = j.daftar || []; ISPA_OK = true; return; } } catch (e) { }
         ISPA_OK = false;
@@ -10790,52 +10753,15 @@
         var k = $('rk-kecamatan').value, d = $('rk-village').value;
         return VIL.filter(function (v) { return (!k || v.kec === k) && (!d || v.desa === d); });
     }
-    /* Kartu atas = ISPU tingkat Kabupaten Katingan (tidak mengikuti filter kecamatan/desa):
-       konsentrasi tiap parameter dirata-rata seluruh desa/kelurahan, lalu diambil sub-indeks tertinggi (parameter dominan). */
-    function kabTime(w) { var m = /(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(w || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 7 * 36e5 : NaN; }
-    function kabWaktu(w) { var m = /(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(w || ''); return m ? (+m[3]) + ' ' + BLN3[+m[2] - 1] + ' ' + m[1] + ' · ' + m[4] + '.' + m[5] + ' WIB' : (w || '-'); }
-    /* ISPU tingkat Kabupaten Katingan: konsentrasi tiap parameter dirata-rata se-kabupaten,
-       lalu diambil sub-indeks tertinggi (parameter dominan). Tidak dipengaruhi filter kecamatan/desa. */
-    function kabISPU() {
-        var sum = {}, cnt = {}, n = 0;
-        VIL.forEach(function (v) {
-            var s = stat(PM.v[v.kode]); if (!s) return; n++;
-            s.par.forEach(function (p) { if (p.ref != null) { sum[p.k] = (sum[p.k] || 0) + p.ref; cnt[p.k] = (cnt[p.k] || 0) + 1; } });
-        });
-        var best = null, par = PARAMS.map(function (p) {
-            var m = cnt[p.k] ? sum[p.k] / cnt[p.k] : null, sb = p.bp ? sub(m, p.bp) : null, o = { k: p.k, n: p.n, h: p.h, ref: m, sub: sb };
-            if (sb != null && (!best || sb > best.sub)) best = o;
-            return o;
-        });
-        return best ? { isp: best.sub, dom: best, mean: best.ref, c: cat(best.sub), n: n, par: par } : null;
-    }
-    function openKab() {
-        var k = PM.ok ? kabISPU() : null, old = $('kab-modal'); if (old) old.remove();
-        var m = document.createElement('div'); m.id = 'kab-modal'; m.className = 'fixed inset-0 z-[3000] bg-black/55 overflow-auto p-4'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'ISPU Kabupaten Katingan');
-        var h = '<div class="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl mx-auto p-5 space-y-4 shadow-2xl"><div class="flex items-start justify-between gap-3"><div><h3 class="font-extrabold text-lg flex items-center gap-2"><i data-lucide="gauge" class="w-5 h-5 text-sky-500"></i>ISPU Kabupaten Katingan</h3><p class="text-xs text-slate-500 dark:text-slate-400">Rata-rata konsentrasi se-kabupaten (model CAMS) · diperbarui ' + (PM.upd ? wibS(PM.upd) : '-') + '</p></div><button type="button" id="kab-x" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center" aria-label="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button></div>';
-        if (!k) h += '<p class="text-sm text-slate-500 py-6 text-center">Data ISPU belum tersedia.</p>';
-        else h += '<div class="rounded-2xl p-4 text-white" style="background:linear-gradient(135deg,' + k.c.c + ',' + k.c.c + 'cc)"><div class="flex items-end gap-3"><div class="text-5xl font-black leading-none tabular-nums">' + k.isp.toLocaleString('id-ID') + '</div><div class="pb-1"><div class="text-[10px] font-bold opacity-90">KATEGORI</div><div class="font-extrabold">' + E(k.c.n) + '</div></div></div><div class="text-[11px] mt-2 opacity-95">Parameter dominan: <b>' + E(k.dom.n) + '</b> · dari ' + k.n + ' desa/kelurahan</div></div>' +
-            '<div><div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">DATA KONSENTRASI RATA-RATA (µg/m³)</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">' + tiles(k, false) + '</div></div>' +
-            '<button type="button" id="kab-det" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-white bg-sky-600 hover:bg-sky-700"><i data-lucide="list" class="w-3.5 h-3.5"></i>Lihat per desa/kelurahan</button>';
-        h += '<p class="text-[11px] text-slate-400">ISPU = sub-indeks tertinggi dari parameter tersedia (Permen LHK 14/2020), tidak dibatasi 500. HC tidak tersedia pada model CAMS. Estimasi model (±40 km), dapat berbeda dari stasiun pemantau DLH.</p></div>';
-        m.innerHTML = h; document.body.appendChild(m);
-        var close = function () { m.remove(); document.removeEventListener('keydown', esc); }, esc = function (e) { if (e.key === 'Escape') close(); };
-        $('kab-x').onclick = close; m.addEventListener('click', function (e) { if (e.target === m) close(); }); document.addEventListener('keydown', esc);
-        var d = $('kab-det'); if (d) d.onclick = function () { close(); $('kualitas-udara').scrollIntoView({ behavior: 'smooth' }); };
-        $('kab-x').focus();
-    }
-    /* Kartu ISPU kabupaten: mewakili Kabupaten Katingan = ibukota Kasongan (Kec. Katingan Hilir).
-       Kasongan terdiri dari Kelurahan Kasongan Baru & Kasongan Lama; dipakai yang tertinggi. Tidak ikut filter wilayah. */
-    var IBUKOTA = ['62.06.02.1003', '62.06.02.1004'];
     function cardPM() {
         var val = $('pm-val'), sub = $('pm-sub'), cc = $('pm-chip'); if (!val) return;
         if (!PM.ok) { val.textContent = '–'; sub.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
-        var best = null;
-        IBUKOTA.forEach(function (k) { var s = stat(PM.v[k]); if (s && s.isp != null && (!best || s.isp > best.isp)) best = s; });
-        if (!best) { val.textContent = '–'; sub.textContent = 'Data Kasongan belum tersedia'; cc.innerHTML = ''; return; }
-        val.innerHTML = best.isp.toLocaleString('id-ID') + ' <small>ISPU</small>';
-        cc.innerHTML = chip(best.c, true);
-        sub.textContent = 'Kasongan · Dominan: ' + best.dom.n;
+        var arr = pool().map(function (v) { var s = stat(PM.v[v.kode]); return s && s.ref != null ? { v: v, s: s } : null; }).filter(Boolean);
+        if (!arr.length) { val.textContent = '–'; sub.textContent = 'Tidak ada data di wilayah ini'; cc.innerHTML = ''; return; }
+        var mean = arr.reduce(function (a, b) { return a + b.s.ref; }, 0) / arr.length, top = arr.reduce(function (a, b) { return b.s.isp > a.s.isp ? b : a; }), mi = ispu(mean);
+        val.innerHTML = mi + ' <small>ISPU</small>';
+        cc.innerHTML = chip(cat(mi), true);
+        sub.textContent = arr.length > 1 ? 'Tertinggi: ' + top.v.desa + ' (' + top.s.isp + ')' : 'PM2.5 24 jam: ' + f1(arr[0].s.ref) + ' µg/m³';
     }
     function ispaCalc(kec) {
         var l = ISPA.filter(function (r) { return !kec || r.kec === kec; });
@@ -10864,7 +10790,7 @@
     var T = { sort: 'cur', dir: -1, page: 1, q: '', kec: '', cat: '' }, PER = 20;
     function rowsPM() {
         var q = T.q.toLowerCase();
-        var l = VIL.map(function (v) { var s = stat(PM.v[v.kode]); return { kode: v.kode, desa: v.desa, kec: v.kec, jenis: v.jenis, p10: s ? s.par[0].ref : null, p25: s ? s.par[1].ref : null, dom: s && s.dom ? s.dom.n : '', isp: s ? s.isp : null, c: s ? s.c : null, s: s }; });
+        var l = VIL.map(function (v) { var s = stat(PM.v[v.kode]); return { kode: v.kode, desa: v.desa, kec: v.kec, jenis: v.jenis, cur: s ? s.cur : null, avg: s ? s.avg : null, max: s ? s.max : null, isp: s ? s.isp : null, c: s ? s.c : null }; });
         return l.filter(function (r) { return (!T.kec || r.kec === T.kec) && (!q || (r.desa + ' ' + r.kec).toLowerCase().indexOf(q) >= 0); });
     }
     function renderPM() {
@@ -10879,17 +10805,15 @@
         var pages = Math.max(1, Math.ceil(l.length / PER)); T.page = Math.min(T.page, pages);
         var sl = l.slice((T.page - 1) * PER, T.page * PER);
         body.innerHTML = sl.length ? sl.map(function (r) {
-            return '<tr class="pm-row-tr' + (r.kode === SEL ? ' sel' : '') + '" data-k="' + E(r.kode) + '"><td class="py-2.5 px-3"><div class="font-semibold">' + E(r.desa) + '</div><div class="text-[11px] text-slate-400">' + E(r.jenis) + '</div></td><td class="py-2.5 px-3">' + E(r.kec) + '</td>' +
-                '<td class="py-2.5 px-3 tabular-nums hidden sm:table-cell">' + fv(r.p10, 'p10') + '</td><td class="py-2.5 px-3 tabular-nums hidden sm:table-cell">' + fv(r.p25, 'p25') + '</td>' +
-                '<td class="py-2.5 px-3 font-black tabular-nums" style="color:' + (r.c ? r.c.c : '#94a3b8') + '">' + (r.isp == null ? '–' : r.isp.toLocaleString('id-ID')) + '</td><td class="py-2.5 px-3 hidden md:table-cell font-semibold">' + E(r.dom || '–') + '</td><td class="py-2.5 px-3">' + chip(r.c, true) + '</td></tr>';
+            return '<tr class="pm-row-tr" data-k="' + E(r.kode) + '"><td class="py-2.5 px-3"><div class="font-semibold">' + E(r.desa) + '</div><div class="text-[11px] text-slate-400">' + E(r.jenis) + '</div></td><td class="py-2.5 px-3">' + E(r.kec) + '</td>' +
+                '<td class="py-2.5 px-3 tabular-nums">' + f1(r.cur) + '</td><td class="py-2.5 px-3 tabular-nums hidden sm:table-cell">' + f1(r.avg) + '</td><td class="py-2.5 px-3 tabular-nums hidden lg:table-cell">' + f1(r.max) + '</td>' +
+                '<td class="py-2.5 px-3 font-black tabular-nums" style="color:' + (r.c ? r.c.c : '#94a3b8') + '">' + (r.isp == null ? '–' : r.isp) + '</td><td class="py-2.5 px-3">' + chip(r.c, true) + '</td></tr>';
         }).join('') : '<tr><td colspan="7" class="py-8 text-center text-slate-400 italic">' + (PM.ok ? 'Tidak ada desa/kelurahan yang cocok.' : 'Data ISPU belum tersedia. Coba muat ulang beberapa saat lagi.') + '</td></tr>';
         $('pm-info').textContent = l.length + ' desa/kelurahan · halaman ' + T.page + '/' + pages;
         $('pm-prev').disabled = T.page <= 1; $('pm-next').disabled = T.page >= pages;
         document.querySelectorAll('#pm-head th[data-k]').forEach(function (th) { th.setAttribute('aria-sort', th.dataset.k === T.sort ? (T.dir > 0 ? 'ascending' : 'descending') : 'none'); var a = th.querySelector('.ar'); if (a) a.textContent = th.dataset.k === T.sort ? (T.dir > 0 ? '▲' : '▼') : ''; });
-        renderDetail();
         $('pm-upd').textContent = PM.upd ? wibS(PM.upd) : '-';
         var su = $('src-pm-upd'); if (su) su.textContent = PM.upd ? wibS(PM.upd) : 'belum tersedia';
-        var sk = $('src-kab-upd'); if (sk) sk.textContent = PM.upd ? wibS(PM.upd) : 'belum tersedia';
     }
     function csv(name, head, rows) {
         var q = function (v) { v = v == null ? '' : String(v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
@@ -10910,34 +10834,16 @@
         var mx = Math.max.apply(null, vals.map(function (x) { return x || 0; }).concat([1])), w = 224 / vals.length;
         return '<svg viewBox="0 0 224 34" width="100%" height="34" role="img" aria-label="Prakiraan PM2.5 24 jam">' + vals.map(function (x, k) { var h = Math.max(1.5, (x || 0) / mx * 32), c = cat(ispu(x)); return '<rect x="' + (k * w + 0.5).toFixed(1) + '" y="' + (34 - h).toFixed(1) + '" width="' + (w - 1).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1" fill="' + (c ? c.c : '#cbd5e1') + '"/>'; }).join('') + '</svg>';
     }
-    function tiles(s, small) {
-        return s.par.map(function (p) {
-            var dom = s.dom && s.dom.k === p.k;
-            return '<div style="border:1px solid ' + (dom ? s.c.c : '#e2e8f0') + ';' + (dom ? 'box-shadow:0 0 0 1px ' + s.c.c + ';' : '') + 'border-radius:10px;padding:' + (small ? '4px 7px' : '8px 10px') + '"><div class="text-[10px] font-bold text-slate-400">' + E(p.n) + (dom ? ' · dominan' : '') + '</div><div class="font-extrabold ' + (small ? 'text-xs' : 'text-base') + ' text-slate-800 dark:text-slate-100 tabular-nums">' + (p.ref == null ? '–' : fv(p.ref, p.k)) + (small ? '' : ' <span class="text-[10px] font-medium text-slate-400">µg/m³</span>') + '</div>' + (small ? '' : '<div class="text-[10px] text-slate-400">' + (p.sub == null ? 'tidak tersedia' : 'ISPU ' + p.sub.toLocaleString('id-ID') + ' · ' + p.h + ' jam') + '</div>') + '</div>';
-        }).join('');
-    }
     function pmPopup(p) {
         var o = PM.v[p.kode], s = stat(o), c = s ? s.c : null, col = c ? c.c : '#64748b';
-        var h = '<div class="w-64 overflow-hidden rounded-2xl"><div class="px-4 py-3 text-white flex items-center justify-between gap-2" style="background:' + col + '"><div class="min-w-0"><div class="font-bold text-sm leading-tight">' + E(p.jenis || 'Desa') + ' ' + E(p.desa) + '</div><div class="text-[10px] opacity-85">Kecamatan ' + E(p.kecamatan) + '</div></div>' + (s ? '<div class="text-right shrink-0"><div class="text-2xl font-black leading-none">' + s.isp.toLocaleString('id-ID') + '</div><div class="text-[9px] opacity-85 font-bold tracking-wide">ISPU</div></div>' : '') + '</div><div class="bg-white px-4 py-3.5 space-y-2 text-xs dark:bg-slate-900">';
+        var rw = function (l, v) { return '<div class="flex items-center justify-between"><span class="text-slate-400 font-medium">' + l + '</span><b class="text-slate-800 dark:text-slate-100">' + v + '</b></div>'; };
+        var h = '<div class="w-64 overflow-hidden rounded-2xl"><div class="px-4 py-3 text-white flex items-center justify-between gap-2" style="background:' + col + '"><div class="min-w-0"><div class="font-bold text-sm leading-tight">' + E(p.jenis || 'Desa') + ' ' + E(p.desa) + '</div><div class="text-[10px] opacity-85">Kecamatan ' + E(p.kecamatan) + '</div></div>' + (s ? '<div class="text-right shrink-0"><div class="text-2xl font-black leading-none">' + s.isp + '</div><div class="text-[9px] opacity-85 font-bold tracking-wide">ISPU</div></div>' : '') + '</div><div class="bg-white px-4 py-3.5 space-y-2 text-xs dark:bg-slate-900">';
         if (!s) return h + '<div class="text-slate-500">Data ISPU belum tersedia.</div></div></div>';
         h += '<div class="flex items-center justify-between"><span class="text-slate-400 font-medium">Kategori</span>' + chip(c, true) + '</div>' +
-            '<div class="flex items-center justify-between"><span class="text-slate-400 font-medium">Parameter dominan</span><b class="text-slate-800 dark:text-slate-100">' + E(s.dom.n) + '</b></div>' +
-            '<div class="text-[10px] font-bold text-slate-400 pt-1">Konsentrasi (µg/m³)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' + tiles(s, true) + '</div>' +
-            '<div class="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700"><div class="text-[10px] text-slate-400 mb-0.5">Prakiraan PM2.5 24 jam ke depan</div>' + spark(o, s.i) + '</div>' +
-            '<div class="text-[10px] text-slate-400">Model CAMS (±40 km) · estimasi, bukan sensor lokal · HC tidak tersedia</div></div></div>';
+            rw('PM2.5 sekarang', f1(s.cur) + ' µg/m³') + rw('PM2.5 rata-rata 24 jam', f1(s.avg) + ' µg/m³') + rw('Puncak 24 jam ke depan', f1(s.max) + ' µg/m³') +
+            '<div class="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700">' + spark(o, s.i) + '<div class="flex justify-between text-[9px] text-slate-400 mt-0.5"><span>sekarang</span><span>+24 jam</span></div></div>' +
+            '<div class="text-[10px] text-slate-400">ISPU dari PM2.5 (model CAMS ±40 km) · estimasi, bukan sensor lokal</div></div></div>';
         return h;
-    }
-    /* Kartu detail semua parameter (gaya laporan ISPU DLH) */
-    function renderDetail() {
-        var box = $('pm-detail'); if (!box) return;
-        var all = VIL.map(function (v) { return { v: v, s: stat(PM.v[v.kode]) }; }).filter(function (x) { return x.s && x.s.isp != null; });
-        if (!all.length) { box.innerHTML = '<p class="text-sm text-slate-400 italic">Data ISPU belum tersedia.</p>'; return; }
-        var pick = SEL ? all.filter(function (x) { return x.v.kode === SEL; })[0] : null, auto = !pick;
-        pick = pick || all.reduce(function (a, b) { return b.s.isp > a.s.isp ? b : a; });
-        var s = pick.s, c = s.c;
-        box.innerHTML = '<div class="flex flex-wrap items-stretch gap-3"><div class="rounded-2xl p-4 text-white flex-1 min-w-[220px]" style="background:linear-gradient(135deg,' + c.c + ',' + c.c + 'cc)"><div class="text-[11px] font-bold opacity-90">' + (auto ? 'ISPU tertinggi saat ini' : 'ISPU terpilih') + '</div><div class="text-lg font-extrabold leading-tight mt-0.5">' + E(pick.v.jenis) + ' ' + E(pick.v.desa) + '</div><div class="text-[11px] opacity-90">Kecamatan ' + E(pick.v.kec) + '</div><div class="flex items-end gap-3 mt-2"><div class="text-5xl font-black leading-none tabular-nums">' + s.isp.toLocaleString('id-ID') + '</div><div class="pb-1"><div class="text-[10px] font-bold opacity-90">KATEGORI</div><div class="font-extrabold">' + E(c.n) + '</div></div></div><div class="text-[11px] mt-2 opacity-95">Parameter dominan: <b>' + E(s.dom.n) + '</b></div></div>' +
-            '<div class="flex-[2] min-w-[260px]"><div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">DATA KONSENTRASI (µg/m³) · nilai sesuai waktu rata-rata ISPU</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">' + tiles(s, false) + '</div></div></div>' +
-            '<div class="flex flex-wrap items-center justify-between gap-2 mt-3"><span class="text-[11px] text-slate-400">Pilih baris pada tabel untuk melihat desa/kelurahan lain.</span><button type="button" id="pm-det-map" data-k="' + E(pick.v.kode) + '" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>Lihat di peta</button></div>';
     }
     function initMapLayer() {
         if (typeof map === 'undefined' || typeof L === 'undefined' || typeof layersCtl === 'undefined') return;
@@ -10949,12 +10855,12 @@
                 l.on('mouseout', function (e) { pmLayer.resetStyle(e.target); });
             }
         });
-        layersCtl.addOverlay(pmLayer, 'ISPU per desa (CAMS)');
+        layersCtl.addOverlay(pmLayer, 'ISPU per desa (PM2.5 CAMS)');
         addChips();
         var Lg = L.Control.extend({
             options: { position: 'bottomleft' }, onAdd: function () {
                 var d = L.DomUtil.create('div', 'pm-legend'); L.DomEvent.disableClickPropagation(d);
-                d.innerHTML = '<b>ISPU</b>' + CATS.map(function (c) { return '<div><i style="background:' + c.c + '"></i>' + E(c.n) + ' <span>' + c.rg + '</span></div>'; }).join('') + '<small>Permen LHK 14/2020 · CAMS, estimasi model</small>';
+                d.innerHTML = '<b>ISPU <span>(PM2.5 µg/m³)</span></b>' + CATS.map(function (c) { return '<div><i style="background:' + c.c + '"></i>' + E(c.n) + ' <span>' + c.rg + ' (' + c.pm + ')</span></div>'; }).join('') + '<small>Permen LHK 14/2020 · CAMS, estimasi model</small>';
                 return d;
             }
         });
@@ -10967,7 +10873,7 @@
             var el = e.popup.getElement(); if (!el || el.querySelector('.pm-row')) return;
             var body = el.querySelector('.bg-white'); if (!body) return;
             var s = stat(PM.v[f.properties.kode]), c = s ? s.c : null;
-            var html = '<div class="pm-row flex items-center justify-between pt-2.5 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700"><span class="text-slate-400 font-medium">ISPU (CAMS)</span><span class="inline-flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">' + (s ? s.isp.toLocaleString('id-ID') + ' ' : '–') + chip(c, true) + '</span></div>';
+            var html = '<div class="pm-row flex items-center justify-between pt-2.5 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700"><span class="text-slate-400 font-medium">ISPU (PM2.5)</span><span class="inline-flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">' + (s ? s.isp + ' ' : '–') + chip(c, true) + '</span></div>';
             var slot = body.querySelector('.wk-slot'); if (slot) slot.insertAdjacentHTML('beforebegin', html); else body.insertAdjacentHTML('beforeend', html);
             e.popup.update();
         });
@@ -10980,7 +10886,7 @@
             var t = b.textContent.trim(); if (b.querySelector('svg,i') || !CHIP_ICON[t]) return;
             b.innerHTML = '<i data-lucide="' + CHIP_ICON[t] + '"></i><span>' + E(t) + '</span>';
         });
-        var b = document.createElement('button'); b.type = 'button'; b.id = 'chip-ispu'; b.className = 'map-chip'; b.title = 'Indeks Standar Pencemar Udara (model CAMS)';
+        var b = document.createElement('button'); b.type = 'button'; b.id = 'chip-ispu'; b.className = 'map-chip'; b.title = 'Indeks Standar Pencemar Udara (PM2.5, CAMS)';
         b.innerHTML = '<i data-lucide="gauge"></i><span>ISPU</span>';
         var ref = null; Array.prototype.forEach.call(bar.children, function (x) { if (!ref && x.textContent.trim() === 'Angin') ref = x; });
         bar.insertBefore(b, ref);
@@ -11032,7 +10938,7 @@
 
     /* ---------- inisialisasi ---------- */
     function bind() {
-        ['rk-kecamatan', 'rk-village'].forEach(function (id) { $(id).addEventListener('change', cardISPA); });
+        ['rk-kecamatan', 'rk-village'].forEach(function (id) { $(id).addEventListener('change', refreshCards); });
         var k = $('pm-kec'); k.innerHTML = '<option value="">Semua kecamatan</option>' + Array.from(new Set(VIL.map(function (v) { return v.kec; }))).sort().map(function (x) { return '<option>' + E(x) + '</option>'; }).join('');
         k.onchange = function () { T.kec = k.value; T.page = 1; renderPM(); };
         $('pm-q').oninput = function () { T.q = this.value.trim(); T.page = 1; renderPM(); };
@@ -11040,12 +10946,11 @@
         $('pm-head').onclick = function (e) { var th = e.target.closest('th[data-k]'); if (!th) return; if (T.sort === th.dataset.k) T.dir *= -1; else { T.sort = th.dataset.k; T.dir = (th.dataset.k === 'desa' || th.dataset.k === 'kec') ? 1 : -1; } renderPM(); };
         $('pm-prev').onclick = function () { T.page--; renderPM(); };
         $('pm-next').onclick = function () { T.page++; renderPM(); };
-        $('pm-body').onclick = function (e) { var tr = e.target.closest('tr[data-k]'); if (!tr) return; SEL = tr.dataset.k; renderPM(); $('pm-detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
-        $('pm-detail').onclick = function (e) { var b = e.target.closest('#pm-det-map'); if (b) showOnMap(b.dataset.k); };
+        $('pm-body').onclick = function (e) { var tr = e.target.closest('tr[data-k]'); if (tr) showOnMap(tr.dataset.k); };
         $('pm-map').onclick = function () { if (pmLayer && !map.hasLayer(pmLayer)) pmLayer.addTo(map); $('gis-map').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
         $('pm-csv').onclick = function () {
-            csv('ispu_cams_katingan_' + wibStamp() + '.csv', ['Kode', 'Desa/Kelurahan', 'Kecamatan', 'ISPU', 'Kategori', 'Parameter dominan', 'PM10 (ug/m3)', 'PM2.5 (ug/m3)', 'SO2 (ug/m3)', 'CO (ug/m3)', 'O3 (ug/m3)', 'NO2 (ug/m3)', 'HC (ug/m3)'],
-                rowsPM().map(function (r) { var P = r.s ? r.s.par : []; var g = function (k) { var x = P.filter(function (p) { return p.k === k; })[0]; return x && x.ref != null ? Math.round(x.ref * 100) / 100 : ''; }; return [r.kode, r.desa, r.kec, r.isp == null ? '' : r.isp, r.c ? r.c.n : '', r.dom, g('p10'), g('p25'), g('so2'), g('co'), g('o3'), g('no2'), '']; }));
+            csv('pm25_cams_katingan_' + wibStamp() + '.csv', ['Kode', 'Desa/Kelurahan', 'Kecamatan', 'PM2.5 sekarang (ug/m3)', 'Rata-rata 24 jam (ug/m3)', 'Puncak 24 jam ke depan (ug/m3)', 'ISPU (PM2.5)', 'Kategori ISPU'],
+                rowsPM().map(function (r) { return [r.kode, r.desa, r.kec, f1(r.cur), f1(r.avg), f1(r.max), r.isp == null ? '' : r.isp, r.c ? r.c.n : '']; }));
         };
         var hc = $('btn-csv-hotspot'); if (hc) hc.onclick = function () {
             var l = (typeof globalFilteredHotspots !== 'undefined' ? globalFilteredHotspots : []) || [];
@@ -11054,14 +10959,13 @@
                 l.map(function (h) { return [h.time, h.village, h.kecamatan, h.satellite, h.confidence, h.frp, h.lat, h.lng]; }));
         };
         var ic = $('ispa-card'); ic.onclick = openISPA; ic.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openISPA(); } };
-        var pc = $('pm-card'); pc.onclick = openKab; pc.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openKab(); } };
+        var pc = $('pm-card'); pc.onclick = function () { $('kualitas-udara').scrollIntoView({ behavior: 'smooth' }); }; pc.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('kualitas-udara').scrollIntoView({ behavior: 'smooth' }); } };
     }
     async function muat() {
-        await Promise.all([loadPM(), loadISPA(), loadKab()]);
+        await Promise.all([loadPM(), loadISPA()]);
         if (pmLayer) pmLayer.setStyle(pmStyle);
         refreshCards(); renderPM();
         var sp = $('src-ispa-per'), r = ISPA_OK ? ispaCalc('') : null; if (sp) sp.textContent = r ? 'periode terbaru ' + tglS(r.p0) : 'belum ada data';
-        var sk = $('src-kab-upd'); if (sk) sk.textContent = KAB[0] ? kabWaktu(KAB[0].waktu) : 'belum ada data';
         var sf = $('src-fir-upd'), lt = $('last-satellite-pull-time'); if (sf && lt) sf.textContent = lt.textContent;
     }
     function init() {
@@ -11069,7 +10973,7 @@
         setInterval(function () { if (!document.hidden) muat(); }, 15 * 60 * 1000);
         setInterval(function () { if (!document.hidden && typeof fetchRealtimeData === 'function') fetchRealtimeData(false); }, 10 * 60 * 1000);
     }
-    window.AirKit = { onStats: onStats, reload: muat, _t: { sub: sub, PARAMS: PARAMS, ispu: ispu, cat: cat, stat: stat, parseT0: parseT0, ispaCalc: ispaCalc } };
+    window.AirKit = { onStats: onStats, reload: muat, _t: { ispu: ispu, cat: cat, stat: stat, parseT0: parseT0, ispaCalc: ispaCalc } };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 
