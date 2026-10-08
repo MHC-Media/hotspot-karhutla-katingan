@@ -4,8 +4,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- Keamanan: halaman admin tidak diindeks mesin pencari, tidak boleh dibingkai (anti-clickjacking), dan dibatasi CSP -->
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.open-meteo.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <script>try { if (window.top !== window.self) { document.documentElement.style.display = 'none'; window.top.location = window.self.location; } } catch (e) { document.documentElement.innerHTML = ''; }</script>
     <title>Admin – Laporan Karhutla Kabupaten Katingan</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+    <style>
+        /* Popup & cluster titik panas: sama dengan dashboard */
+        .hotspot-popup .leaflet-popup-content-wrapper{padding:0;border-radius:1rem;overflow:hidden;box-shadow:0 12px 28px -6px rgba(15,23,42,.3)}
+        .hotspot-popup .leaflet-popup-content{margin:0;width:256px!important}
+        .hotspot-popup .leaflet-popup-tip{box-shadow:0 8px 16px -4px rgba(15,23,42,.2)}
+        .hotspot-popup .leaflet-popup-close-button{color:#fff!important;top:8px!important;right:8px!important;font-size:18px!important;opacity:.85}
+        .hotspot-popup .leaflet-popup-close-button:hover{opacity:1}
+        .marker-cluster-hotspot{background-color:rgba(220,38,38,.55)}
+        .marker-cluster-hotspot div{background-color:rgba(220,38,38,.85);color:#fff;font-weight:700}
+        #map .btn{display:inline-flex;align-items:center;gap:6px}
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -17,7 +36,8 @@
         })()
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script>
 /* ================================================================
    WINDKIT - ARAH ANGIN PADA PETA
@@ -95,7 +115,7 @@
     function kelas(kmh) {
         if (kmh < 1) return {
             label: 'Tenang',
-            color: '#94a3b8',
+            color: '#3b82f6',
             risk: 'Hampir tidak ada dorongan angin.'
         };
         if (kmh < 12) return {
@@ -252,7 +272,8 @@
     async function getMany(points) {
         var out = new Array(points.length),
             need = [],
-            idx = [];
+            idx = [],
+            firstErr = null;
         points.forEach(function(p, i) {
             var c = cache.get(key(p.lat, p.lng));
             if (fresh(c)) out[i] = c;
@@ -261,16 +282,23 @@
                 idx.push(i);
             }
         });
-        for (var s = 0; s < need.length; s += 40) {
+        var jobs = [];
+        for (var s = 0; s < need.length; s += 40) jobs.push(s);
+        await Promise.all(jobs.map(async function(s) { // potongan 40 titik, berjalan paralel; kegagalan sebagian ditoleransi
             var chunk = need.slice(s, s + 40);
-            var res = await fetchRaw(chunk);
-            res.forEach(function(w, j) {
-                if (w) {
-                    cache.set(key(chunk[j].lat, chunk[j].lng), w);
-                    out[idx[s + j]] = w;
-                }
-            });
-        }
+            try {
+                var res = await fetchRaw(chunk);
+                res.forEach(function(w, j) {
+                    if (w) {
+                        cache.set(key(chunk[j].lat, chunk[j].lng), w);
+                        out[idx[s + j]] = w;
+                    }
+                });
+            } catch (e) {
+                if (!firstErr) firstErr = e;
+            }
+        }));
+        if (firstErr && !out.some(Boolean)) throw firstErr;
         return out;
     }
 
@@ -328,6 +356,33 @@
         '.wk-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px}' +
         '.wk-hint{margin-top:6px;font-size:10px;color:#64748b}' +
         '.dark .wk-dk .wk-hint{color:#94a3b8}' +
+        '.wk-cc{width:166px;padding:6px 10px 10px;text-align:center;position:relative}' +
+        '.wk-cc .wk-rose2{display:block;margin:0 auto}' +
+        '.wk-rose2 .wk-ring{fill:none;stroke:#cbd5e1;stroke-width:1.5}' +
+        '.wk-rose2 .wk-xh{stroke:#e2e8f0;stroke-width:1}' +
+        '.wk-rose2 .wk-tick{stroke:#94a3b8;stroke-width:1.5}' +
+        '.wk-rose2 .wk-hub{fill:#fff}' +
+        '.wk-lbl2{font:800 15px system-ui,sans-serif;fill:#1e293b;text-anchor:middle;dominant-baseline:central}' +
+        '.wk-lbl2.n{fill:#dc2626}' +
+        '.wk-lbl3{font:700 9px system-ui,sans-serif;fill:#64748b;text-anchor:middle;dominant-baseline:central}' +
+        '.dark .wk-dk .wk-ring{stroke:#475569}.dark .wk-dk .wk-xh{stroke:#334155}.dark .wk-dk .wk-lbl2{fill:#f1f5f9}.dark .wk-dk .wk-lbl2.n{fill:#f87171}.dark .wk-dk .wk-lbl3{fill:#94a3b8}.dark .wk-dk .wk-hub{fill:#0f172a}' +
+        '.wk-cc-t{font-size:14px;font-weight:600;margin-top:2px}' +
+        '.wk-cc-s{font-size:12px;color:#64748b}.dark .wk-dk .wk-cc-s{color:#94a3b8}' +
+        '.wk-cc-d{font-size:10.5px;color:#64748b;margin-top:2px}.dark .wk-dk .wk-cc-d{color:#94a3b8}' +
+        '.wk-rf{position:absolute;top:6px;right:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:#64748b;cursor:pointer}' +
+        '.wk-rf:hover{background:rgba(100,116,139,.15)}' +
+        '.wk-ramp{height:5px;border-radius:3px;margin:8px 2px 0}' +
+        '.wk-ramp-l{display:flex;justify-content:space-between;font-size:9px;color:#64748b;margin-top:2px;padding:0 1px}.dark .wk-dk .wk-ramp-l{color:#94a3b8}' +
+        '.wk-tgs{display:flex;gap:6px;justify-content:center;margin-top:7px}' +
+        '.wk-tg{font:700 10.5px system-ui,sans-serif;padding:3px 10px;border-radius:999px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;cursor:pointer}' +
+        '.wk-tg.on{background:#0d9488;border-color:#0d9488;color:#fff}.wk-tg:disabled{opacity:.5;cursor:default}' +
+        '.dark .wk-dk .wk-tg:not(.on){background:#1e293b;border-color:#475569;color:#cbd5e1}' +
+        '.wk-stat{display:flex;align-items:center;gap:6px;max-width:260px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.92);box-shadow:0 1px 4px rgba(0,0,0,.2);color:#334155;font:600 10.5px/1.3 system-ui,sans-serif}' +
+        '.dark .wk-stat{background:rgba(15,23,42,.92);color:#e2e8f0}' +
+        '.wk-stat i{flex:none;width:7px;height:7px;border-radius:50%;background:#94a3b8}.wk-stat i.ok{background:#22c55e}.wk-stat i.bad{background:#ef4444}.wk-stat i.wait{background:#f59e0b}' +
+        '.wk-stat button{border:0;background:none;color:#0369a1;font:700 10.5px system-ui,sans-serif;text-decoration:underline;cursor:pointer;padding:0}.dark .wk-stat button{color:#7dd3fc}' +
+        '.wk-flow{position:absolute;left:0;top:0;pointer-events:none;transition:opacity .35s ease}' +
+        '@media(max-width:480px){.wk-cc{width:140px}.wk-cc .wk-rose2{width:96px;height:96px}}' +
         '@media(max-width:480px){.wk-panel{width:176px;padding:8px 10px}}';
 
     function injectCss() {
@@ -360,6 +415,36 @@
     function icon(size) {
         return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
             '<path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/></svg>';
+    }
+
+    function refreshIcon(size) {
+        return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/></svg>';
+    }
+
+    // Kartu kompas: mawar angin 8 arah + jarum menunjuk ke arah TUJUAN angin
+    function compassSvg(w, size) {
+        var col = kelas(w.speed).color,
+            to = toward(w.dir),
+            t = '';
+        for (var i = 0; i < 8; i++) {
+            var a = i * 45 * Math.PI / 180,
+                r1 = (i % 2 ? 50 : 47),
+                r2 = 54;
+            t += '<line class="wk-tick" x1="' + (80 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (80 - r1 * Math.cos(a)).toFixed(1) +
+                '" x2="' + (80 + r2 * Math.sin(a)).toFixed(1) + '" y2="' + (80 - r2 * Math.cos(a)).toFixed(1) + '"/>';
+        }
+        return '<svg class="wk-rose2" viewBox="0 0 160 160" width="' + size + '" height="' + size + '" role="img" aria-label="Angin dari ' + compass(w.dir).nama + '">' +
+            '<circle cx="80" cy="80" r="54" class="wk-ring"/>' +
+            '<line class="wk-xh" x1="80" y1="30" x2="80" y2="130"/><line class="wk-xh" x1="30" y1="80" x2="130" y2="80"/>' + t +
+            '<text x="80" y="13" class="wk-lbl2 n">U</text><text x="148" y="81" class="wk-lbl2">T</text>' +
+            '<text x="80" y="149" class="wk-lbl2">S</text><text x="12" y="81" class="wk-lbl2">B</text>' +
+            '<text x="56" y="56" class="wk-lbl3">BL</text><text x="104" y="56" class="wk-lbl3">TL</text>' +
+            '<text x="56" y="105" class="wk-lbl3">BD</text><text x="104" y="105" class="wk-lbl3">TG</text>' +
+            '<g style="transform:rotate(' + to.toFixed(0) + 'deg);transform-origin:80px 80px">' +
+            '<line x1="80" y1="80" x2="80" y2="40" stroke="' + col + '" stroke-width="4.5" stroke-linecap="round"/>' +
+            '<path d="M80 26 L90 46 L70 46 Z" fill="' + col + '" stroke="' + col + '" stroke-width="2" stroke-linejoin="round"/></g>' +
+            '<circle cx="80" cy="80" r="5" class="wk-hub" stroke="' + col + '" stroke-width="3"/></svg>';
     }
 
     // ctx: 'hotspot' | 'point' | '' (tanpa catatan api)
@@ -414,6 +499,426 @@
         });
     }
 
+    /* ---------- GRID ANGIN (u,v dalam m/s) ---------- */
+    var GSTEP = 0.05; // simpul grid selalu kelipatan 0.05 deg agar cocok dengan pembulatan API/cache
+
+    function gridSpec(b, step, maxN) {
+        var pad = 0.1, s = Math.ceil((step || 0.4) / GSTEP - 1e-9) * GSTEP, sp;
+        for (var g = 0; g < 20; g++) {
+            sp = {
+                lat0: Math.floor((b.getSouth() - pad) / GSTEP) * GSTEP,
+                lng0: Math.floor((b.getWest() - pad) / GSTEP) * GSTEP,
+                step: s
+            };
+            sp.nLat = Math.ceil((b.getNorth() + pad - sp.lat0) / s - 1e-9) + 1;
+            sp.nLng = Math.ceil((b.getEast() + pad - sp.lng0) / s - 1e-9) + 1;
+            if (sp.nLat * sp.nLng <= (maxN || 80)) break;
+            s += GSTEP;
+        }
+        sp.nodes = [];
+        for (var i = 0; i < sp.nLat; i++)
+            for (var j = 0; j < sp.nLng; j++) sp.nodes.push({
+                lat: +(sp.lat0 + i * s).toFixed(2),
+                lng: +(sp.lng0 + j * s).toFixed(2),
+                i: i,
+                j: j
+            });
+        return sp;
+    }
+
+    function uv(w) { // km/jam & arah ASAL (derajat) -> komponen vektor m/s (u: ke timur, v: ke utara)
+        var r = w.dir * Math.PI / 180, ms = w.speed / 3.6;
+        return [-ms * Math.sin(r), -ms * Math.cos(r)];
+    }
+
+    // isi simpul yang kosong dengan rata-rata tetangga; null bila tidak ada data sama sekali
+    function fillGrid(sp, U, V) {
+        var n = U.length, ok = 0, k;
+        for (k = 0; k < n; k++)
+            if (!isNaN(U[k])) ok++;
+        if (!ok) return null;
+        for (var pass = 0; pass < 12 && ok < n; pass++) {
+            var nu = U.slice(),
+                nv = V.slice();
+            for (k = 0; k < n; k++) {
+                if (!isNaN(U[k])) continue;
+                var i = Math.floor(k / sp.nLng),
+                    j = k % sp.nLng,
+                    su = 0,
+                    sv = 0,
+                    c = 0;
+                for (var di = -1; di <= 1; di++)
+                    for (var dj = -1; dj <= 1; dj++) {
+                        var ii = i + di,
+                            jj = j + dj;
+                        if (ii < 0 || jj < 0 || ii >= sp.nLat || jj >= sp.nLng) continue;
+                        var q = ii * sp.nLng + jj;
+                        if (!isNaN(U[q])) {
+                            su += U[q];
+                            sv += V[q];
+                            c++;
+                        }
+                    }
+                if (c) {
+                    nu[k] = su / c;
+                    nv[k] = sv / c;
+                }
+            }
+            U = nu;
+            V = nv;
+            ok = 0;
+            for (k = 0; k < n; k++)
+                if (!isNaN(U[k])) ok++;
+        }
+        return {
+            sp: sp,
+            U: U,
+            V: V
+        };
+    }
+
+    // dari simpul teratur (hasil Open-Meteo): res sejajar dengan sp.nodes
+    function gridFromNodes(sp, res) {
+        var U = [],
+            V = [];
+        sp.nodes.forEach(function(nd, k) {
+            var w = res[k];
+            if (w) {
+                var c = uv(w);
+                U.push(c[0]);
+                V.push(c[1]);
+            } else {
+                U.push(NaN);
+                V.push(NaN);
+            }
+        });
+        return fillGrid(sp, U, V);
+    }
+
+    // dari titik tersebar (mis. prakiraan BMKG per desa): interpolasi IDW ke grid teratur
+    function gridFromScatter(sp, pts) {
+        var P = pts.filter(function(p) {
+            return p && Number.isFinite(p.speed) && Number.isFinite(p.dir);
+        }).map(function(p) {
+            var c = uv(p);
+            return [p.lat, p.lng, c[0], c[1]];
+        });
+        if (!P.length) return null;
+        var U = [],
+            V = [];
+        sp.nodes.forEach(function(nd) {
+            var su = 0,
+                sv = 0,
+                sw = 0;
+            for (var k = 0; k < P.length; k++) {
+                var dy = P[k][0] - nd.lat,
+                    dx = (P[k][1] - nd.lng) * Math.cos(nd.lat * Math.PI / 180),
+                    d2 = dx * dx + dy * dy + 1e-4;
+                if (d2 > 0.9) continue; // radius ~0.95 deg
+                var w = 1 / (d2 * d2);
+                su += w * P[k][2];
+                sv += w * P[k][3];
+                sw += w;
+            }
+            U.push(sw ? su / sw : NaN);
+            V.push(sw ? sv / sw : NaN);
+        });
+        return fillGrid(sp, U, V);
+    }
+
+    function sampleGrid(g, lat, lng, out) { // interpolasi bilinear; di luar grid = nilai tepi terdekat
+        var sp = g.sp,
+            fy = (lat - sp.lat0) / sp.step,
+            fx = (lng - sp.lng0) / sp.step;
+        fy = fy < 0 ? 0 : fy > sp.nLat - 1 ? sp.nLat - 1 : fy;
+        fx = fx < 0 ? 0 : fx > sp.nLng - 1 ? sp.nLng - 1 : fx;
+        var i = Math.min(Math.floor(fy), sp.nLat - 2),
+            j = Math.min(Math.floor(fx), sp.nLng - 2);
+        if (i < 0) i = 0;
+        if (j < 0) j = 0;
+        var ty = sp.nLat > 1 ? fy - i : 0,
+            tx = sp.nLng > 1 ? fx - j : 0,
+            i2 = Math.min(i + 1, sp.nLat - 1),
+            j2 = Math.min(j + 1, sp.nLng - 1),
+            a = i * sp.nLng + j,
+            b = i * sp.nLng + j2,
+            c = i2 * sp.nLng + j,
+            d = i2 * sp.nLng + j2;
+        out[0] = (g.U[a] * (1 - tx) + g.U[b] * tx) * (1 - ty) + (g.U[c] * (1 - tx) + g.U[d] * tx) * ty;
+        out[1] = (g.V[a] * (1 - tx) + g.V[b] * tx) * (1 - ty) + (g.V[c] * (1 - tx) + g.V[d] * tx) * ty;
+        return out;
+    }
+
+    /* ---------- ANIMASI ALIRAN ANGIN (partikel pada canvas) ---------- */
+    // Setiap partikel bergerak mengikuti vektor angin hasil interpolasi grid; kecepatan angin
+    // menentukan panjang goresan, kecepatan gerak, dan warna garis.
+    var SPD = [0.5, 1.5, 3, 5, 7.5, 10, 14]; // batas kelas kecepatan (m/s)
+    var PAL_LIGHT = ['#5c7cfa', '#1c7ed6', '#0c8599', '#2b8a3e', '#e67700', '#d9480f', '#c92a2a', '#862e9c'];
+    var PAL_DARK = ['#a5d8ff', '#74c0fc', '#63e6be', '#b2f2bb', '#ffe066', '#ffa94d', '#ff8787', '#f783ac'];
+
+    function Flow(map, opt) {
+        var canvas = null,
+            ctx = null,
+            grid = null,
+            raf = 0,
+            on = false,
+            visible = true,
+            moving = false,
+            last = 0,
+            W = 0,
+            H = 0,
+            dpr = 1,
+            CELL = 4,
+            nx = 0,
+            ny = 0,
+            FU = null,
+            FV = null,
+            N = 0,
+            X = null,
+            Y = null,
+            AGE = null,
+            LIFE = null,
+            io = null,
+            tmp = [0, 0],
+            KS = 0.2,
+            reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+        var BK = 8,
+            bx0 = [],
+            by0 = [],
+            bx1 = [],
+            by1 = [];
+
+        function ensure() {
+            if (canvas) return;
+            if (!map.getPane('windFlow')) {
+                var p = map.createPane('windFlow');
+                p.style.zIndex = 430;
+                p.style.pointerEvents = 'none';
+            }
+            canvas = L.DomUtil.create('canvas', 'wk-flow', map.getPane('windFlow'));
+            canvas.setAttribute('aria-hidden', 'true');
+            canvas.style.opacity = 0;
+            ctx = canvas.getContext('2d');
+        }
+
+        function palette() {
+            return (opt.darkBase && opt.darkBase()) ? PAL_DARK : PAL_LIGHT;
+        }
+
+        function resize() {
+            var s = map.getSize();
+            W = s.x;
+            H = s.y;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.round(W * dpr);
+            canvas.height = Math.round(H * dpr);
+            canvas.style.width = W + 'px';
+            canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.lineCap = 'round';
+            L.DomUtil.setPosition(canvas, map.containerPointToLayerPoint([0, 0]));
+            CELL = W < 600 ? 6 : 4;
+            var want = Math.round(W * H / (W < 600 ? 520 : 330));
+            N = Math.max(500, Math.min(W < 600 ? 1600 : 3600, want));
+            X = new Float32Array(N);
+            Y = new Float32Array(N);
+            AGE = new Float32Array(N);
+            LIFE = new Float32Array(N);
+            for (var i = 0; i < N; i++) seed(i, true);
+        }
+
+        function seed(i, spread) {
+            X[i] = Math.random() * W;
+            Y[i] = Math.random() * H;
+            LIFE[i] = 50 + Math.random() * 70;
+            AGE[i] = spread ? Math.random() * LIFE[i] : 0;
+        }
+
+        // vektor kecepatan (piksel/frame) di setiap sel layar, dihitung dari grid angin
+        function buildField() {
+            if (!grid) {
+                FU = null;
+                return;
+            }
+            nx = Math.ceil(W / CELL) + 2;
+            ny = Math.ceil(H / CELL) + 2;
+            FU = new Float32Array(nx * ny);
+            FV = new Float32Array(nx * ny);
+            var z = map.getZoom(),
+                scale = 256 * Math.pow(2, z),
+                org = map.getPixelBounds().min,
+                k = Math.max(0.12, Math.min(0.55, 0.2 * Math.pow(2, (z - 9) * 0.3))),
+                p = 0;
+            KS = k;
+            for (var j = 0; j < ny; j++) {
+                var wy = org.y + j * CELL,
+                    lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * wy / scale))) * 180 / Math.PI;
+                for (var i = 0; i < nx; i++, p++) {
+                    var lng = (org.x + i * CELL) / scale * 360 - 180;
+                    sampleGrid(grid, lat, lng, tmp);
+                    FU[p] = tmp[0] * k;
+                    FV[p] = -tmp[1] * k; // sumbu y layar menghadap ke bawah
+                }
+            }
+        }
+
+        function bucket(sp) { // sp: kecepatan m/s
+            var b = 0;
+            while (b < SPD.length && sp >= SPD[b]) b++;
+            return b;
+        }
+
+        function frame(ts) {
+            raf = 0;
+            if (!on || !visible || moving || !FU) return;
+            var dt = last ? Math.min(ts - last, 50) : 16.7;
+            last = ts;
+            var fs = dt / 16.7,
+                pal = palette(),
+                dark = pal === PAL_DARK,
+                b, i;
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.fillStyle = 'rgba(0,0,0,' + (dark ? 0.9 : 0.92) + ')';
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalCompositeOperation = 'source-over';
+            for (b = 0; b < BK; b++) {
+                bx0[b].length = 0;
+                by0[b].length = 0;
+                bx1[b].length = 0;
+                by1[b].length = 0;
+            }
+            for (i = 0; i < N; i++) {
+                var x = X[i],
+                    y = Y[i];
+                AGE[i] += fs;
+                if (AGE[i] > LIFE[i] || x < 0 || y < 0 || x >= W || y >= H) {
+                    seed(i, false);
+                    continue;
+                }
+                var fx = x / CELL,
+                    fy = y / CELL,
+                    ix = fx | 0,
+                    iy = fy | 0,
+                    tx = fx - ix,
+                    ty = fy - iy,
+                    q = iy * nx + ix,
+                    vx = (FU[q] * (1 - tx) + FU[q + 1] * tx) * (1 - ty) + (FU[q + nx] * (1 - tx) + FU[q + nx + 1] * tx) * ty,
+                    vy = (FV[q] * (1 - tx) + FV[q + 1] * tx) * (1 - ty) + (FV[q + nx] * (1 - tx) + FV[q + nx + 1] * tx) * ty,
+                    mag = Math.sqrt(vx * vx + vy * vy);
+                var x2 = x + vx * fs,
+                    y2 = y + vy * fs;
+                X[i] = x2;
+                Y[i] = y2;
+                if (mag < 0.004) continue; // angin tenang: partikel diam, tidak digambar
+                b = bucket(mag / KS);
+                bx0[b].push(x);
+                by0[b].push(y);
+                bx1[b].push(x2);
+                by1[b].push(y2);
+            }
+            ctx.lineWidth = dark ? 1.5 : 1.6;
+            for (b = 0; b < BK; b++) {
+                var n = bx0[b].length;
+                if (!n) continue;
+                ctx.globalAlpha = b === 0 ? 0.4 : 0.9;
+                ctx.strokeStyle = pal[b];
+                ctx.beginPath();
+                for (i = 0; i < n; i++) {
+                    ctx.moveTo(bx0[b][i], by0[b][i]);
+                    ctx.lineTo(bx1[b][i], by1[b][i]);
+                }
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            raf = requestAnimationFrame(frame);
+        }
+
+        function loop() {
+            if (!raf && on && visible && !moving && FU && !reduce) {
+                last = 0;
+                raf = requestAnimationFrame(frame);
+            }
+        }
+
+        function clear() {
+            if (ctx) ctx.clearRect(0, 0, W, H);
+        }
+
+        function rebuild() {
+            if (!on) return;
+            ensure();
+            resize();
+            buildField();
+            clear();
+            canvas.style.opacity = FU ? 1 : 0;
+            loop();
+        }
+
+        function onMoveStart() {
+            moving = true;
+            if (raf) {
+                cancelAnimationFrame(raf);
+                raf = 0;
+            }
+            if (canvas) canvas.style.opacity = 0;
+        }
+
+        function onMoveEnd() {
+            moving = false;
+            rebuild();
+        }
+        for (var b = 0; b < BK; b++) {
+            bx0.push([]);
+            by0.push([]);
+            bx1.push([]);
+            by1.push([]);
+        }
+
+        return {
+            start: function() {
+                if (on) return;
+                on = true;
+                moving = false;
+                ensure();
+                map.on('movestart', onMoveStart).on('moveend', onMoveEnd).on('resize', onMoveEnd).on('baselayerchange', clear);
+                if ('IntersectionObserver' in window) {
+                    io = new IntersectionObserver(function(en) {
+                        visible = en[0].isIntersecting;
+                        if (visible) loop();
+                        else if (raf) {
+                            cancelAnimationFrame(raf);
+                            raf = 0;
+                        }
+                    });
+                    io.observe(map.getContainer());
+                }
+                rebuild();
+            },
+            stop: function() {
+                on = false;
+                if (raf) cancelAnimationFrame(raf);
+                raf = 0;
+                map.off('movestart', onMoveStart).off('moveend', onMoveEnd).off('resize', onMoveEnd).off('baselayerchange', clear);
+                if (io) {
+                    io.disconnect();
+                    io = null;
+                }
+                if (canvas) {
+                    clear();
+                    canvas.style.opacity = 0;
+                }
+            },
+            setGrid: function(g) {
+                grid = g;
+                if (on) rebuild();
+            },
+            isOn: function() {
+                return on;
+            },
+            reduced: reduce
+        };
+    }
+
     /* ---------- komponen peta ---------- */
     function create(map, opt) {
         opt = opt || {};
@@ -443,38 +948,44 @@
             return opt.active ? !!opt.active() : isOn();
         }
 
-        /* --- grid titik --- */
-        function points() {
-            var b = opt.bounds(),
-                pts;
-            if (!b || !b.isValid()) return [];
-            var span = Math.max(b.getNorth() - b.getSouth(), b.getEast() - b.getWest());
-            var step = Math.min(opt.step || 0.3, Math.max(0.05, span / 3)); // wilayah kecil -> grid lebih rapat
-            for (var guard = 0; guard < 8; guard++) {
-                pts = [];
-                var nLat = Math.max(1, Math.ceil((b.getNorth() - b.getSouth()) / step));
-                var nLng = Math.max(1, Math.ceil((b.getEast() - b.getWest()) / step));
-                for (var i = 0; i < nLat; i++) {
-                    for (var j = 0; j < nLng; j++) {
-                        var la = b.getSouth() + step * (i + 0.5),
-                            ln = b.getWest() + step * (j + 0.5);
-                        if (!opt.inside || opt.inside(la, ln)) pts.push({
-                            lat: +la.toFixed(3),
-                            lng: +ln.toFixed(3)
-                        });
-                    }
-                }
-                if (pts.length <= 60) break;
-                step *= 1.25;
+        /* --- grid & preferensi --- */
+        var prefs = {
+            flow: true,
+            arrows: false
+        };
+        try {
+            var sv = JSON.parse(localStorage.getItem('wkPrefs') || '{}');
+            if (typeof sv.flow === 'boolean') prefs.flow = sv.flow;
+            if (typeof sv.arrows === 'boolean') prefs.arrows = sv.arrows;
+        } catch (e) {}
+
+        function savePrefs() {
+            try {
+                localStorage.setItem('wkPrefs', JSON.stringify(prefs));
+            } catch (e) {}
+        }
+        var flow = opt.flow === false ? null : Flow(map, opt);
+        var arrows = L.layerGroup(),
+            curGrid = null,
+            inCache = {},
+            statEl = null;
+        if (!flow || flow.reduced) prefs.arrows = true; // tanpa animasi -> panah menjadi penanda utama
+
+        function isIn(la, ln) {
+            if (!opt.inside) return true;
+            var k = key(la, ln);
+            if (!(k in inCache)) inCache[k] = !!opt.inside(la, ln);
+            return inCache[k];
+        }
+
+        function applyPrefs() {
+            if (!isOn()) return;
+            if (prefs.arrows) group.addLayer(arrows);
+            else group.removeLayer(arrows);
+            if (flow) {
+                if (prefs.flow && !flow.reduced) flow.start();
+                else flow.stop();
             }
-            if (pts.length < 3) { // wilayah sempit: pakai titik tengah
-                var c = b.getCenter();
-                pts = [{
-                    lat: +c.lat.toFixed(3),
-                    lng: +c.lng.toFixed(3)
-                }];
-            }
-            return pts;
         }
 
         function addArrow(w) {
@@ -495,7 +1006,7 @@
                 minWidth: 256,
                 maxWidth: 270
             });
-            group.addLayer(m);
+            arrows.addLayer(m);
         }
 
         async function load(force) {
@@ -503,34 +1014,67 @@
             state = {
                 status: 'loading',
                 sum: state.sum,
-                err: null
+                err: null,
+                src: state.src
             };
             renderPanel();
+            renderStatus();
             try {
-                var pts = points();
-                if (!pts.length) throw new Error('Wilayah peta belum siap.');
-                if (force) pts.forEach(function(p) {
-                    cache.delete(key(p.lat, p.lng));
-                });
-                var ws = (await getMany(pts)).filter(Boolean);
+                var b = opt.bounds && opt.bounds();
+                if (!b || !b.isValid()) throw new Error('Wilayah peta belum siap.');
+                var sp = gridSpec(b, opt.step || 0.4, 80),
+                    ws, g = null,
+                    src = 'Open-Meteo';
+                try {
+                    if (force) sp.nodes.forEach(function(n) {
+                        cache.delete(key(n.lat, n.lng));
+                    });
+                    var res = await getMany(sp.nodes);
+                    if (my !== seq) return;
+                    ws = res.filter(Boolean);
+                    if (!ws.length) throw new Error('Data angin tidak tersedia saat ini.');
+                    g = gridFromNodes(sp, res);
+                } catch (e1) {
+                    if (my !== seq) return;
+                    if (opt.fallback) { // cadangan: prakiraan angin BMKG per desa (diinterpolasi ke grid)
+                        try {
+                            var fb = await opt.fallback();
+                            if (my !== seq) return;
+                            if (fb && fb.pts && fb.pts.length) {
+                                ws = fb.pts;
+                                g = gridFromScatter(sp, ws);
+                                src = fb.src || 'BMKG';
+                            }
+                        } catch (e2) {}
+                    }
+                    if (!g) throw e1;
+                }
                 if (my !== seq) return;
-                if (!ws.length) throw new Error('Data angin tidak tersedia saat ini.');
-                group.clearLayers();
-                ws.forEach(addArrow);
+                var inn = opt.inside ? ws.filter(function(w) {
+                    return isIn(w.lat, w.lng);
+                }) : ws;
+                if (!inn.length) inn = ws;
+                arrows.clearLayers();
+                inn.forEach(addArrow);
+                curGrid = g;
+                if (flow) flow.setGrid(g);
                 state = {
                     status: 'ok',
-                    sum: summary(ws),
-                    err: null
+                    sum: summary(inn),
+                    err: null,
+                    src: src
                 };
             } catch (e) {
                 if (my !== seq) return;
                 state = {
                     status: 'error',
                     sum: state.sum,
-                    err: (e && e.message) || 'Gagal memuat data angin.'
+                    err: (e && e.message) || 'Gagal memuat data angin.',
+                    src: state.src
                 };
             }
             renderPanel();
+            renderStatus();
             if (opt.onChange) opt.onChange(state);
         }
 
@@ -540,6 +1084,7 @@
             timer = setInterval(function() {
                 if (isOn()) load(true);
             }, REFRESH);
+            applyPrefs();
             sync();
         });
         group.on('remove', function() {
@@ -547,6 +1092,7 @@
             clearInterval(timer);
             timer = null;
             clearSpread();
+            if (flow) flow.stop();
             sync();
         });
 
@@ -557,29 +1103,69 @@
                 toggleEl.setAttribute('aria-pressed', isOn() ? 'true' : 'false');
             }
             if (panelEl) panelEl.style.display = isOn() ? '' : 'none';
+            if (statEl) statEl.style.display = isOn() ? '' : 'none';
+        }
+
+        function renderStatus() {
+            if (!statEl) return;
+            var s = state,
+                h;
+            if (s.status === 'error' && !curGrid) h = '<i class="bad"></i>Data angin tak tersedia.<button type="button" data-wk="reload">Coba lagi</button>';
+            else if (s.status === 'loading' && !curGrid) h = '<i class="wait"></i>Memuat data angin&hellip;';
+            else h = '<i class="' + (s.status === 'error' ? 'wait' : 'ok') + '"></i>Data angin tersedia' + (s.src ? ' &middot; ' + esc(s.src) : '') +
+                (s.sum ? ' &middot; ' + jam(s.sum.time) : '') + (s.status === 'loading' ? ' &middot; memperbarui&hellip;' : '') + (s.status === 'error' ? ' &middot; pembaruan gagal' : '');
+            statEl.innerHTML = h;
+            statEl.title = s.err || '';
         }
 
         function renderPanel() {
             if (!panelEl) return;
             var s = state,
-                h = '<div class="wk-ph"><span>Arah Angin</span><button type="button" data-wk="reload">Perbarui</button></div>';
-            if (s.sum) {
-                var f = compass(s.sum.dir),
-                    k = kelas(s.sum.speed),
-                    t = compass(toward(s.sum.dir));
-                h += '<div class="wk-top">' + rose(s.sum, 56) + '<div class="wk-main"><div style="font-weight:800">Dari ' + f.nama + ' (' + s.sum.dir.toFixed(0) + '&deg;)</div>' +
-                    '<div style="color:#64748b;font-size:11px">Menuju ' + t.nama + '</div>' +
-                    '<span class="wk-chip" style="background:' + k.color + '">' + fmt1(s.sum.speed) + ' km/jam &middot; ' + k.label + '</span></div></div>' +
-                    '<div class="wk-hint">Rata-rata ' + s.sum.n + ' titik &middot; pukul ' + jam(s.sum.time) + '</div>';
+                sm = s.sum,
+                h = '';
+            h += '<button type="button" class="wk-rf" data-wk="reload" title="Perbarui data angin" aria-label="Perbarui data angin">' + refreshIcon(14) + '</button>';
+            if (sm) {
+                var k = kelas(sm.speed),
+                    calm = sm.speed < 1;
+                h += compassSvg(sm, 104) +
+                    '<div class="wk-cc-t">Angin <b style="color:' + k.color + '">' + k.label.toLowerCase() + '</b></div>' +
+                    '<div class="wk-cc-s">' + (sm.speed / 3.6).toFixed(1) + ' m/s</div>' +
+                    (calm ? '' : '<div class="wk-cc-d">dari ' + compass(sm.dir).nama + ' &rarr; ' + compass(toward(sm.dir)).nama + '</div>');
+            } else if (s.status === 'error') {
+                h += '<div class="wk-err" style="padding:18px 4px">' + esc(s.err) + '</div>';
+            } else {
+                h += '<div class="wk-load" style="padding:36px 4px">Memuat data angin&hellip;</div>';
             }
-            if (s.status === 'loading' && !s.sum) h += '<div class="wk-load">Memuat data angin&hellip;</div>';
-            if (s.status === 'loading' && s.sum) h += '<div class="wk-hint">Memperbarui&hellip;</div>';
-            if (s.status === 'error') h += '<div class="wk-err">' + esc(s.err) + '</div>';
-            h += '<div class="wk-leg"><span><i style="background:#22c55e"></i>&lt;12</span><span><i style="background:#eab308"></i>12-19</span>' +
-                '<span><i style="background:#f97316"></i>20-28</span><span><i style="background:#dc2626"></i>&ge;29 km/jam</span></div>';
-            h += '<div class="wk-hint">' + (opt.click ? 'Klik titik mana pun di peta atau klik panah untuk cek arah angin.' : 'Klik panah untuk melihat detail angin.') + '</div>';
+            if (flow && !flow.reduced && sm) {
+                var pal = (opt.darkBase && opt.darkBase()) ? PAL_DARK : PAL_LIGHT;
+                h += '<div class="wk-ramp" style="background:linear-gradient(90deg,' + pal.join(',') + ')"></div>' +
+                    '<div class="wk-ramp-l"><span>0</span><span>5</span><span>10</span><span>14+ m/s</span></div>';
+            }
+            if (flow) h += '<div class="wk-tgs"><button type="button" class="wk-tg' + (prefs.flow ? ' on' : '') + '" data-wk="flow" aria-pressed="' + prefs.flow + '"' + (flow.reduced ? ' disabled title="Animasi dimatikan oleh pengaturan perangkat (kurangi gerakan)"' : '') + '>Aliran</button>' +
+                '<button type="button" class="wk-tg' + (prefs.arrows ? ' on' : '') + '" data-wk="arrows" aria-pressed="' + prefs.arrows + '">Panah</button></div>';
             panelEl.innerHTML = h;
         }
+
+        function onCtl(ev) {
+            var t = ev.target && ev.target.closest ? ev.target.closest('[data-wk]') : null;
+            if (!t || t.disabled) return;
+            var a = t.getAttribute('data-wk');
+            if (a === 'reload') load(true);
+            else if (a === 'flow') {
+                prefs.flow = !prefs.flow;
+                savePrefs();
+                applyPrefs();
+                renderPanel();
+            } else if (a === 'arrows') {
+                prefs.arrows = !prefs.arrows;
+                savePrefs();
+                applyPrefs();
+                renderPanel();
+            }
+        }
+        map.on('baselayerchange', function() {
+            renderPanel();
+        });
 
         if (opt.toggle !== false) {
             var Tg = L.Control.extend({
@@ -608,20 +1194,36 @@
                     position: opt.panelPos || 'bottomleft'
                 },
                 onAdd: function() {
-                    var d = L.DomUtil.create('div', 'wk-panel wk-dk');
+                    var d = L.DomUtil.create('div', 'wk-panel wk-dk wk-cc');
+                    d.setAttribute('role', 'group');
+                    d.setAttribute('aria-label', 'Arah dan kecepatan angin');
                     L.DomEvent.disableClickPropagation(d);
                     L.DomEvent.disableScrollPropagation(d);
-                    L.DomEvent.on(d, 'click', function(ev) {
-                        var t = ev.target;
-                        if (t && t.getAttribute && t.getAttribute('data-wk') === 'reload') load(true);
-                    });
+                    L.DomEvent.on(d, 'click', onCtl);
                     panelEl = d;
                     return d;
                 }
             });
             new Pn().addTo(map);
         }
+        if (opt.panel !== false) {
+            var St = L.Control.extend({
+                options: {
+                    position: 'bottomleft'
+                },
+                onAdd: function() {
+                    var d = L.DomUtil.create('div', 'wk-stat');
+                    d.setAttribute('role', 'status');
+                    L.DomEvent.disableClickPropagation(d);
+                    L.DomEvent.on(d, 'click', onCtl);
+                    statEl = d;
+                    return d;
+                }
+            });
+            new St().addTo(map);
+        }
         renderPanel();
+        renderStatus();
         sync();
 
         /* --- klik di peta --- */
@@ -728,7 +1330,11 @@
             isOn: isOn,
             getSummary: function() {
                 return state.sum;
-            }
+            },
+            getGrid: function() {
+                return curGrid;
+            },
+            flow: flow
         };
     }
 
@@ -782,7 +1388,12 @@
             parse: parse,
             detailHtml: detailHtml,
             popupHtml: popupHtml,
-            fmt1: fmt1
+            fmt1: fmt1,
+            gridSpec: gridSpec,
+            gridFromNodes: gridFromNodes,
+            gridFromScatter: gridFromScatter,
+            sampleGrid: sampleGrid,
+            uv: uv
         }
     };
 })();
@@ -1035,8 +1646,8 @@
                     <div><label class="lb">Desa/Kelurahan *</label><select id="f-desa" class="in" required></select></div>
                     <div class="md:col-span-2"><label class="lb">Peta lokasi &amp; koordinat *</label>
                         <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 mb-2"><span><i class="dot" style="background:#dc2626"></i>Hotspot confidence ≥ 80%</span><span><i class="dot" style="background:#f59e0b"></i>Hotspot &lt; 80%</span><span><i class="dot" style="background:#94a3b8"></i>Sudah dilaporkan</span><span><i class="dot" style="background:#047857"></i>Batas kabupaten</span><span><i class="dot" style="background:#0f172a"></i>Batas kecamatan</span><span><i class="dot" style="background:#10b981"></i>Desa/kelurahan (warna per kecamatan)</span><span><i class="dot" style="background:#fb923c"></i>Desa terpilih</span></div>
-                        <div id="map" class="h-[28rem] rounded-xl border z-0"></div>
-                        <p class="text-[11px] text-slate-400 mt-1">Klik titik hotspot lalu "Buat Laporan", atau klik area peta untuk memilih lokasi manual. Centang <b>Arah Angin</b> pada kontrol layer peta untuk melihat panah angin.</p>
+                        <div id="map" class="h-[30rem] md:h-[34rem] rounded-xl border z-0"></div>
+                        <p class="text-[11px] text-slate-400 mt-1">Klik titik hotspot lalu "Buat Laporan", atau klik area peta untuk memilih lokasi manual. Centang <b>Angin (aliran &amp; panah)</b> pada kontrol layer peta untuk melihat panah angin.</p>
                         <p id="f-angin" class="text-[11px] font-semibold text-sky-700 dark:text-sky-300 mt-1"></p>
                     </div>
                     <div><label class="lb">Latitude *</label><input id="f-lat" class="in" required></div>
@@ -1128,9 +1739,36 @@
                 </form>
             </section>
 
+            <section id="t-ispa" class="hidden space-y-4">
+                <div class="grid lg:grid-cols-3 gap-4">
+                    <form id="fi" class="card space-y-2 lg:col-span-1">
+                        <b class="text-sm flex items-center gap-1.5"><i data-lucide="stethoscope" class="w-4 h-4 text-violet-500"></i>Input / Ubah Data ISPA</b>
+                        <p class="text-[11px] text-slate-500">Isi jumlah kasus ISPA per kecamatan untuk satu periode (mis. rekap mingguan). Menyimpan tanggal &amp; kecamatan yang sama akan memperbarui data lama. Data agregat saja, jangan isi identitas pasien.</p>
+                        <div><label class="lb">Tanggal akhir periode *</label><input id="i-tgl" type="date" class="in" required></div>
+                        <div><label class="lb">Kecamatan *</label><select id="i-kec" class="in" required></select></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="lb">Total kasus ISPA *</label><input id="i-kasus" type="number" min="0" max="100000" step="1" class="in" required></div>
+                            <div><label class="lb">Di antaranya balita</label><input id="i-balita" type="number" min="0" max="100000" step="1" class="in"></div>
+                        </div>
+                        <div><label class="lb">Catatan (opsional)</label><input id="i-cat" class="in" maxlength="300" placeholder="mis. rekap Puskesmas minggu ke-40"></div>
+                        <div class="flex gap-2"><button class="btn"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan</button><button type="button" id="i-reset" class="btn g">Kosongkan</button></div>
+                    </form>
+                    <div class="card lg:col-span-2 overflow-x-auto">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <b class="text-sm">Riwayat Data ISPA</b>
+                            <div class="flex items-center gap-2"><select id="i-fk" class="in !w-auto"></select><button type="button" id="i-csv" class="btn g"><i data-lucide="download" class="w-4 h-4"></i>Unduh CSV</button></div>
+                        </div>
+                        <table class="w-full text-xs">
+                            <thead class="text-left text-slate-500"><tr><th class="p-2">Periode</th><th>Kecamatan</th><th class="text-right">Kasus</th><th class="text-right">Balita</th><th>Catatan</th><th></th></tr></thead>
+                            <tbody id="i-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
             <section id="t-akun" class="hidden">
                 <form id="fa" class="card max-w-sm space-y-2"><b class="text-sm">Ganti Password</b>
-                    <input id="a1" type="password" class="in" placeholder="Password lama" required><input id="a2" type="password" class="in" placeholder="Password baru (min. 8)" required><button class="btn"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan</button>
+                    <input id="a1" type="password" class="in" placeholder="Password lama" required><input id="a2" type="password" class="in" placeholder="Password baru (min. 10)" required><button class="btn"><i data-lucide="save" class="w-4 h-4 inline -mt-0.5 mr-1"></i>Simpan</button>
                 </form>
             </section>
         </main>
@@ -8371,7 +9009,7 @@
                 ['laporan', 'Laporan', 'clipboard-list'],
                 ['riwayat', 'Riwayat', 'history'],
                 ['buat', 'Buat Laporan', 'file-plus'],
-                ['pdf', 'Laporan PDF', 'file-down'], ...(ME.r === 'admin' ? [
+                ['pdf', 'Laporan PDF', 'file-down'], ...(ME.r === 'admin' || ME.t === 'kecamatan' ? [['ispa', 'Data ISPA', 'stethoscope']] : []), ...(ME.r === 'admin' ? [
                     ['user', 'Pengguna', 'users'],
                     ['log', 'Log Aktivitas', 'scroll-text']
                 ] : []), ['akun', 'Akun', 'key-round']
@@ -8424,11 +9062,11 @@
             } else show('ringkasan');
         }
         const inS = (k, d) => ME.r === 'admin' || (ME.t === 'desa' ? k === ME.k && d === ME.d : ME.t === 'kecamatan' && k === ME.k);
-        const kuat = p => p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.test(p);
+        const kuat = p => p.length >= 10 && /[A-Za-z]/.test(p) && /\d/.test(p);
 
         function paksaGanti() {
             return new Promise(res => {
-                $('mb').innerHTML = `<div class="font-extrabold text-lg">Ganti Password</div><p class="text-xs text-slate-500">Demi keamanan, Anda wajib mengganti password awal/sementara sebelum melanjutkan. Minimal 8 karakter, mengandung huruf dan angka.</p>
+                $('mb').innerHTML = `<div class="font-extrabold text-lg">Ganti Password</div><p class="text-xs text-slate-500">Demi keamanan, Anda wajib mengganti password awal/sementara sebelum melanjutkan. Minimal 10 karakter, mengandung huruf dan angka.</p>
  <form id="fg" class="space-y-2"><input id="g1" type="password" class="in" placeholder="Password lama" autocomplete="off" required><input id="g2" type="password" class="in" placeholder="Password baru" autocomplete="new-password" required><input id="g3" type="password" class="in" placeholder="Ulangi password baru" autocomplete="new-password" required><div class="flex gap-2"><button class="btn">Simpan</button><button type="button" id="gk" class="btn g">Keluar</button></div></form>`;
                 $('modal').classList.remove('hidden');
                 $('gk').onclick = () => keluar();
@@ -8436,7 +9074,7 @@
                     e.preventDefault();
                     wrap(async () => {
                         if ($('g2').value !== $('g3').value) throw new Error('Konfirmasi password tidak sama');
-                        if (!kuat($('g2').value)) throw new Error('Password minimal 8 karakter dan mengandung huruf serta angka');
+                        if (!kuat($('g2').value)) throw new Error('Password minimal 10 karakter dan mengandung huruf serta angka');
                         await api('gantiPassword', {
                             lama: $('g1').value,
                             baru: $('g2').value
@@ -8470,6 +9108,7 @@
                 users()
             }
             if (t === 'log') wrap(logs);
+            if (t === 'ispa') wrap(ispaLoad);
             if (t === 'buat') $('f-tgl').max = nowLocal();
             draw()
         }
@@ -8479,6 +9118,73 @@
             tabel();
             rwRender()
         }
+
+        /* ===== Data ISPA (agregat per kecamatan) ===== */
+        let ISP = [];
+        const ispaKecOpts = () => (ME.r === 'admin' ? Object.keys(WIL).sort() : [ME.k]).map(k => `<option>${esc(k)}</option>`).join('');
+        async function ispaLoad() {
+            $('i-kec').innerHTML = ispaKecOpts();
+            const fk = $('i-fk'), v = fk.value;
+            fk.innerHTML = '<option value="">Semua kecamatan</option>' + ispaKecOpts();
+            fk.value = v;
+            const d = new Date(Date.now() + 7 * 36e5).toISOString().slice(0, 10);
+            $('i-tgl').max = d;
+            if (!$('i-tgl').value) $('i-tgl').value = d;
+            ISP = (await api('ispaList')).data;
+            ispaRender();
+        }
+
+        function ispaRender() {
+            const k = $('i-fk').value, l = ISP.filter(x => !k || x.Kecamatan === k);
+            $('i-rows').innerHTML = l.length ? l.map(x => `<tr class="border-t"><td class="p-2 whitespace-nowrap">${esc(fmtTgl(x.Tgl))}</td><td>${esc(x.Kecamatan)}</td><td class="text-right font-bold">${esc(x.Kasus)}</td><td class="text-right">${esc(x.Balita || '–')}</td><td class="text-slate-500">${esc(x.Catatan)}</td><td class="whitespace-nowrap text-right"><button class="btn g !px-2" data-e="${esc(x.ID)}" title="Ubah" aria-label="Ubah"><i data-lucide="pencil" class="w-4 h-4 pointer-events-none"></i></button> <button class="btn g !px-2" data-x="${esc(x.ID)}" title="Hapus" aria-label="Hapus"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button></td></tr>`).join('') : '<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada data.</td></tr>';
+        }
+        $('i-fk').onchange = ispaRender;
+        $('i-rows').onclick = e => {
+            const b = e.target.closest('button');
+            if (!b) return;
+            if (b.dataset.e) {
+                const x = ISP.find(r => r.ID === b.dataset.e);
+                if (!x) return;
+                $('i-tgl').value = x.Tgl;
+                $('i-kec').value = x.Kecamatan;
+                $('i-kasus').value = x.Kasus;
+                $('i-balita').value = x.Balita;
+                $('i-cat').value = x.Catatan;
+                $('fi').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            if (b.dataset.x) wrap(async () => {
+                if (!confirm('Hapus data ISPA ini?')) return;
+                await api('ispaHapus', { id: b.dataset.x });
+                toast('Data dihapus', 'ok');
+                await ispaLoad();
+            });
+        };
+        $('i-reset').onclick = () => {
+            $('fi').reset();
+            $('i-tgl').value = new Date(Date.now() + 7 * 36e5).toISOString().slice(0, 10);
+        };
+        $('fi').onsubmit = e => {
+            e.preventDefault();
+            wrap(async () => {
+                await api('ispaSave', { tgl: $('i-tgl').value, kecamatan: $('i-kec').value, kasus: $('i-kasus').value, balita: $('i-balita').value, catatan: $('i-cat').value });
+                toast('Data ISPA tersimpan', 'ok');
+                $('i-kasus').value = '';
+                $('i-balita').value = '';
+                $('i-cat').value = '';
+                await ispaLoad();
+            });
+        };
+        $('i-csv').onclick = () => {
+            const q = v => { v = String(v ?? ''); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"' };
+            const k = $('i-fk').value, l = ISP.filter(x => !k || x.Kecamatan === k);
+            const txt = '\ufeff' + [['Tanggal Periode', 'Kecamatan', 'Kasus', 'Balita', 'Catatan', 'Diinput oleh']].concat(l.map(x => [x.Tgl, x.Kecamatan, x.Kasus, x.Balita, x.Catatan, x.DibuatOleh])).map(r => r.map(q).join(',')).join('\r\n');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
+            a.download = 'ispa_katingan.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove() }, 500);
+        };
 
         // ---- ringkasan ----
         const cnt = (l, f) => {
@@ -8700,19 +9406,14 @@
             "Bukit Raya": "#16a085"
         };
         const kc = k => KC[k] || '#64748b';
-        const polStyle = f => ME.r === 'admin' ? {
-            color: kc(f.properties.kecamatan),
-            weight: 1,
-            opacity: .85,
-            dashArray: '3',
+        const polStyle = f => ({
             fillColor: kc(f.properties.kecamatan),
-            fillOpacity: .15
-        } : {
-            color: '#059669',
-            weight: 2,
-            fillColor: '#10b981',
-            fillOpacity: .14
-        };
+            weight: 1.5,
+            opacity: 1,
+            color: '#ffffff',
+            dashArray: '3',
+            fillOpacity: 0.45
+        });
 
         function initMap() {
             if (map) {
@@ -8720,29 +9421,52 @@
                 mapRefresh();
                 return
             }
-            const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // Peta dasar & kontrol sama dengan dashboard (index.html)
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 18,
-                    attribution: '© OpenStreetMap'
+                    attribution: '&copy; OpenStreetMap contributors'
                 }),
                 sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 18,
-                    attribution: 'Tiles © Esri'
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                 });
             map = L.map('map', {
+                center: [-1.9, 112.9],
+                zoom: 9,
                 layers: [osm]
-            }).setView([-1.9, 113.2], 8);
+            });
             map.on('click', e => pilih(e.latlng.lat, e.latlng.lng, true));
             POL = L.geoJSON(GJ_DATA, {
                 filter: f => inS(f.properties.kecamatan, f.properties.desa),
                 style: polStyle,
-                onEachFeature: (f, l) => l.bindTooltip((f.properties.jenis || 'Desa') + ' ' + f.properties.desa + ' · Kec. ' + f.properties.kecamatan, {
-                    sticky: true
-                })
+                onEachFeature: (f, l) => {
+                    l.bindTooltip(`<b>${esc(f.properties.jenis || 'Desa')} ${esc(f.properties.desa)}</b><br><span style="opacity:.8">Kecamatan ${esc(f.properties.kecamatan)}</span>`, {
+                        sticky: true
+                    });
+                    l.on({
+                        mouseover: e => e.target.setStyle({
+                            weight: 3,
+                            fillOpacity: .75
+                        }),
+                        mouseout: () => {
+                            POL.resetStyle(l);
+                            hl()
+                        }
+                    })
+                }
             }).addTo(map);
             KEC = L.layerGroup().addTo(map);
             KAB = L.layerGroup().addTo(map);
-            HSL = L.layerGroup().addTo(map);
-            // Layer arah angin (default nonaktif supaya pemilihan lokasi tetap leluasa; centang untuk menampilkan)
+            // Marker cluster, sama seperti dashboard: peta tetap ringan walau banyak titik panas
+            HSL = L.markerClusterGroup({
+                maxClusterRadius: 45,
+                iconCreateFunction: c => L.divIcon({
+                    html: '<div><span>' + c.getChildCount() + '</span></div>',
+                    className: 'marker-cluster marker-cluster-hotspot',
+                    iconSize: L.point(38, 38)
+                })
+            }).addTo(map);
+            // Layer arah angin: opsi identik dengan dashboard (aliran partikel + panah + kartu kompas)
             const wnd = WindKit.create(map, {
                 bounds: () => POL.getBounds(),
                 inside: (la, ln) => {
@@ -8755,20 +9479,32 @@
                         }
                     })
                 },
-                click: false
+                click: false,
+                toggle: false,
+                panelPos: 'topright',
+                flow: true,
+                step: 0.4,
+                darkBase: () => map.hasLayer(sat),
+                active: () => map.hasLayer(wnd.group)
             });
             L.control.layers({
-                'Peta Jalan': osm,
-                'Citra Satelit': sat
+                'Peta Standar (OpenStreetMap)': osm,
+                'Peta Satelit (ESRI World Imagery)': sat
             }, {
                 'Batas Desa/Kelurahan': POL,
                 'Batas Kecamatan': KEC,
                 'Batas Kabupaten': KAB,
                 'Titik Hotspot': HSL,
-                'Arah Angin': wnd.group
+                'Angin (aliran & panah)': wnd.group
+            }, {
+                position: 'topleft'
+            }).addTo(map);
+            L.control.scale({
+                imperial: false,
+                position: 'bottomright'
             }).addTo(map);
             map.on('overlayadd', () => HSL.eachLayer(l => l.bringToFront && l.bringToFront()));
-            if (ME.r !== 'admin' && POL.getBounds().isValid()) map.fitBounds(POL.getBounds());
+            if (POL.getBounds().isValid()) map.fitBounds(POL.getBounds());
             map.invalidateSize();
             mapRefresh();
             hl();
@@ -8843,18 +9579,34 @@
             LAP.forEach(r => {
                 if (r.Ref) done[r.Ref] = r.No
             });
+            const row = (ic, lb, v) => `<div class="flex items-center justify-between"><span class="flex items-center gap-1.5 text-slate-400 font-medium"><i data-lucide="${ic}" class="w-3.5 h-3.5"></i>${lb}</span><span class="text-slate-800 font-bold text-right dark:text-slate-100">${v}</span></div>`;
             HSA.slice(0, 800).forEach((h, i) => {
                 const no = done[refOf(h)],
-                    col = no ? '#94a3b8' : (h.confidence >= 80 ? '#dc2626' : '#f59e0b');
-                L.circleMarker([h.latitude, h.longitude], {
+                    hi = h.confidence >= 80,
+                    col = no ? '#94a3b8' : (hi ? '#dc2626' : '#f59e0b'),
+                    head = no ? 'linear-gradient(135deg,#64748b,#94a3b8)' : hi ? 'linear-gradient(135deg,#dc2626,#f97316)' : 'linear-gradient(135deg,#f59e0b,#fbbf24)';
+                const m = L.circleMarker([h.latitude, h.longitude], {
                     radius: 8,
                     fillColor: col,
                     color: '#fff',
                     weight: 2,
-                    fillOpacity: .95
-                }).addTo(HSL).bindPopup(
-                    `<div style="min-width:230px;font-size:12px;line-height:1.5"><b>${esc(h.village)}</b>, Kec. ${esc(h.kecamatan)}<br>${esc(fmtTJ(h.time))}<br>Confidence ${h.confidence}% · FRP ${h.frp} MW · ${esc(h.satellite)}<br>` +
-                    (no ? `<span style="color:#64748b">Sudah dilaporkan: ${esc(no)}</span>` : `<button class="btn" style="margin-top:6px" onclick="buatDari(${i})"><i data-lucide="file-plus" class="w-4 h-4"></i>Buat Laporan</button>`) + WindKit.slot(+h.latitude, +h.longitude, 'hotspot', true, false) + '</div>')
+                    fillOpacity: .9
+                });
+                m.bindPopup(
+                    `<div class="w-64 overflow-hidden rounded-2xl"><div class="relative px-4 py-3.5 flex items-center gap-2.5" style="background:${head}">` +
+                    `<div class="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center shrink-0"><i data-lucide="flame" class="w-4 h-4 text-white"></i></div>` +
+                    `<div class="flex-1 min-w-0"><div class="text-white font-bold text-sm leading-tight">Titik Panas</div><div class="text-white/80 text-[10px] font-medium">${esc(h.village)}, Kec. ${esc(h.kecamatan)}</div></div>` +
+                    `<span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/25 text-white shrink-0">${esc(h.confidence)}%</span></div>` +
+                    `<div class="bg-white px-4 py-3.5 space-y-2.5 text-xs dark:bg-slate-900">` +
+                    row('satellite', 'Satelit', esc(h.satellite)) + row('zap', 'FRP', esc(h.frp) + ' MW') + row('clock', 'Waktu', esc(fmtTJ(h.time))) +
+                    `<div class="pt-2.5 mt-1 border-t border-dashed border-slate-200 dark:border-slate-700"><span class="text-[10px] text-slate-400 font-mono">${(+h.latitude).toFixed(5)}, ${(+h.longitude).toFixed(5)}</span></div>` +
+                    WindKit.slot(+h.latitude, +h.longitude, 'hotspot', false, true) +
+                    (no ? `<div class="text-center text-slate-500 font-semibold">Sudah dilaporkan: ${esc(no)}</div>` : `<button type="button" class="btn w-full justify-center" onclick="buatDari(${i})"><i data-lucide="file-plus" class="w-4 h-4"></i>Buat Laporan</button>`) +
+                    `</div></div>`, {
+                        className: 'hotspot-popup',
+                        minWidth: 256
+                    });
+                HSL.addLayer(m)
             })
         }
 
@@ -9101,7 +9853,7 @@
         $('fa').onsubmit = e => {
             e.preventDefault();
             wrap(async () => {
-                if (!kuat($('a2').value)) throw new Error('Password minimal 8 karakter dan mengandung huruf serta angka');
+                if (!kuat($('a2').value)) throw new Error('Password minimal 10 karakter dan mengandung huruf serta angka');
                 await api('gantiPassword', {
                     lama: $('a1').value,
                     baru: $('a2').value
