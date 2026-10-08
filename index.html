@@ -431,7 +431,7 @@
                     <div class="stat-ico" style="--c1:#0284c7;--c2:#38bdf8"><i data-lucide="gauge"></i></div>
                     <div>
                         <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Indeks Standar Pencemar Udara (ISPU) per Desa/Kelurahan</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Model CAMS (Copernicus): PM10, PM2.5, SO₂, CO, O₃, NO₂ · µg/m³ · diperbarui <b id="pm-upd" class="text-slate-500 dark:text-slate-300">-</b></p>
+                        <p class="text-xs text-slate-400 mt-0.5">Open-Meteo Air Quality · model CAMS (sel grid terdekat): PM10, PM2.5, SO₂, CO, O₃, NO₂ · µg/m³ · diperbarui <b id="pm-upd" class="text-slate-500 dark:text-slate-300">-</b></p>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -547,9 +547,17 @@
                     <div class="si"><i data-lucide="wind"></i></div>
                     <div class="min-w-0">
                         <h4>Copernicus CAMS</h4>
-                        <p>PM10, PM2.5, SO₂, CO, O₃, dan NO₂ per desa/kelurahan dari model kualitas udara global CAMS (Copernicus) via Open-Meteo Air Quality API, lalu dikonversi menjadi indeks ISPU (Permen LHK No. 14/2020). HC tidak tersedia; acuan resmi tetap stasiun pemantau DLH.</p>
+                        <p>PM10, PM2.5, SO₂, CO, O₃, dan NO₂ per desa/kelurahan dari model kualitas udara global CAMS (Copernicus) via Open-Meteo Air Quality API dengan <code>cell_selection=nearest</code> (nilai diambil dari sel grid model terdekat dengan titik tengah tiap desa/kelurahan), lalu dikonversi menjadi indeks ISPU (Permen LHK No. 14/2020). HC tidak tersedia; acuan resmi tetap stasiun pemantau DLH.</p>
                         <div class="sm"><span>±40 km · per jam</span><span>ISPU dari 6 parameter</span><span>Diperbarui: <b id="src-pm-upd">-</b></span></div>
                         <a href="https://atmosphere.copernicus.eu" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" class="w-3 h-3"></i>atmosphere.copernicus.eu</a>
+                    </div>
+                </article>
+                <article class="src-card" style="--c1:#0369a1;--c2:#38bdf8">
+                    <div class="si"><i data-lucide="gauge"></i></div>
+                    <div class="min-w-0">
+                        <h4>ISPU Kabupaten Katingan</h4>
+                        <p>Kartu ISPU Kab. Katingan di atas peta menampilkan nilai ISPU <b>tertinggi</b> dari seluruh desa/kelurahan beserta nama desa/kelurahan dan kecamatannya. Saat diklik, rincian memuat konsentrasi di lokasi tertinggi tersebut dan rata-rata konsentrasi se-kabupaten. ISPU = sub-indeks tertinggi dari 6 parameter CAMS (Permen LHK No. 14/2020); estimasi model, bukan stasiun DLH.</p>
+                        <div class="sm"><span>Titik tertinggi se-kabupaten</span><span>Nilai bisa &gt; 500</span><span>Diperbarui: <b id="src-kab-upd">-</b></span></div>
                     </div>
                 </article>
                 <article class="src-card" style="--c1:#7c3aed;--c2:#a78bfa">
@@ -10742,13 +10750,13 @@
         return { i: i, cur: par[1].cur, avg: winAvg(o.v, i, 24), max: mx, ref: par[1].ref, isp: isp, dom: best, par: par, c: cat(isp) };
     }
     function pmDirect() {
-        var key = 'ispuDirect2', now = Date.now();
+        var key = 'ispuDirect3', now = Date.now();
         try { var c = JSON.parse(localStorage.getItem(key) || 'null'); if (c && now - c.t < 45 * 6e4) { PM.v = c.v; PM.upd = new Date(c.t).toISOString(); PM.src = 'langsung'; return Promise.resolve(); } } catch (e) { }
         var cs = VIL.map(function (v) { var p = turf.centerOfMass(v.f).geometry.coordinates; return { lat: p[1], lng: p[0] }; }), jobs = [], out = {};
         for (var s = 0; s < VIL.length; s += 40) (function (s) {
             var part = cs.slice(s, s + 40);
             var url = OM + '?latitude=' + part.map(function (c) { return c.lat.toFixed(4); }).join(',') + '&longitude=' + part.map(function (c) { return c.lng.toFixed(4); }).join(',') +
-                '&hourly=pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&past_days=1&forecast_days=2&timezone=Asia%2FJakarta&domains=cams_global';
+                '&hourly=pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&past_days=1&forecast_days=2&timezone=Asia%2FJakarta&domains=cams_global&cell_selection=nearest';
             jobs.push(getJSON(url, 25000).then(function (j) {
                 if (!Array.isArray(j)) j = [j];
                 j.forEach(function (r, k) {
@@ -10788,46 +10796,54 @@
     function kabWaktu(w) { var m = /(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(w || ''); return m ? (+m[3]) + ' ' + BLN3[+m[2] - 1] + ' ' + m[1] + ' · ' + m[4] + '.' + m[5] + ' WIB' : (w || '-'); }
     /* ISPU tingkat Kabupaten Katingan: konsentrasi tiap parameter dirata-rata se-kabupaten,
        lalu diambil sub-indeks tertinggi (parameter dominan). Tidak dipengaruhi filter kecamatan/desa. */
-    function kabISPU() {
+    /* ISPU Kab. Katingan = nilai ISPU TERTINGGI dari seluruh desa/kelurahan (lengkap dengan lokasinya).
+       Rincian juga memuat rata-rata konsentrasi se-kabupaten. Tidak ikut filter wilayah. */
+    function topISPU() {
+        var best = null;
+        VIL.forEach(function (v) { var st = stat(PM.v[v.kode]); if (st && st.isp != null && (!best || st.isp > best.isp)) { best = st; best.v = v; } });
+        return best;
+    }
+    function avgKab() {
         var sum = {}, cnt = {}, n = 0;
         VIL.forEach(function (v) {
-            var s = stat(PM.v[v.kode]); if (!s) return; n++;
-            s.par.forEach(function (p) { if (p.ref != null) { sum[p.k] = (sum[p.k] || 0) + p.ref; cnt[p.k] = (cnt[p.k] || 0) + 1; } });
+            var st = stat(PM.v[v.kode]); if (!st) return; n++;
+            st.par.forEach(function (p) { if (p.ref != null) { sum[p.k] = (sum[p.k] || 0) + p.ref; cnt[p.k] = (cnt[p.k] || 0) + 1; } });
         });
         var best = null, par = PARAMS.map(function (p) {
             var m = cnt[p.k] ? sum[p.k] / cnt[p.k] : null, sb = p.bp ? sub(m, p.bp) : null, o = { k: p.k, n: p.n, h: p.h, ref: m, sub: sb };
             if (sb != null && (!best || sb > best.sub)) best = o;
             return o;
         });
-        return best ? { isp: best.sub, dom: best, mean: best.ref, c: cat(best.sub), n: n, par: par } : null;
+        return best ? { isp: best.sub, dom: best, c: cat(best.sub), n: n, par: par } : null;
     }
+    function lokasi(v) { return (v.jenis || 'Desa') + ' ' + v.desa + ', Kec. ' + v.kec; }
     function openKab() {
-        var k = PM.ok ? kabISPU() : null, old = $('kab-modal'); if (old) old.remove();
+        var top = PM.ok ? topISPU() : null, av = top ? avgKab() : null, old = $('kab-modal'); if (old) old.remove();
         var m = document.createElement('div'); m.id = 'kab-modal'; m.className = 'fixed inset-0 z-[3000] bg-black/55 overflow-auto p-4'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'ISPU Kabupaten Katingan');
-        var h = '<div class="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl mx-auto p-5 space-y-4 shadow-2xl"><div class="flex items-start justify-between gap-3"><div><h3 class="font-extrabold text-lg flex items-center gap-2"><i data-lucide="gauge" class="w-5 h-5 text-sky-500"></i>ISPU Kabupaten Katingan</h3><p class="text-xs text-slate-500 dark:text-slate-400">Rata-rata konsentrasi se-kabupaten (model CAMS) · diperbarui ' + (PM.upd ? wibS(PM.upd) : '-') + '</p></div><button type="button" id="kab-x" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center" aria-label="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button></div>';
-        if (!k) h += '<p class="text-sm text-slate-500 py-6 text-center">Data ISPU belum tersedia.</p>';
-        else h += '<div class="rounded-2xl p-4 text-white" style="background:linear-gradient(135deg,' + k.c.c + ',' + k.c.c + 'cc)"><div class="flex items-end gap-3"><div class="text-5xl font-black leading-none tabular-nums">' + k.isp.toLocaleString('id-ID') + '</div><div class="pb-1"><div class="text-[10px] font-bold opacity-90">KATEGORI</div><div class="font-extrabold">' + E(k.c.n) + '</div></div></div><div class="text-[11px] mt-2 opacity-95">Parameter dominan: <b>' + E(k.dom.n) + '</b> · dari ' + k.n + ' desa/kelurahan</div></div>' +
-            '<div><div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">DATA KONSENTRASI RATA-RATA (µg/m³)</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">' + tiles(k, false) + '</div></div>' +
-            '<button type="button" id="kab-det" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-white bg-sky-600 hover:bg-sky-700"><i data-lucide="list" class="w-3.5 h-3.5"></i>Lihat per desa/kelurahan</button>';
+        var lb = function (t) { return '<div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">' + t + '</div>'; }, grid = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">';
+        var h = '<div class="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl mx-auto p-5 space-y-4 shadow-2xl"><div class="flex items-start justify-between gap-3"><div><h3 class="font-extrabold text-lg flex items-center gap-2"><i data-lucide="gauge" class="w-5 h-5 text-sky-500"></i>ISPU Kabupaten Katingan</h3><p class="text-xs text-slate-500 dark:text-slate-400">Nilai tertinggi se-kabupaten (model CAMS) · diperbarui ' + (PM.upd ? wibS(PM.upd) : '-') + '</p></div><button type="button" id="kab-x" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center" aria-label="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button></div>';
+        if (!top) h += '<p class="text-sm text-slate-500 py-6 text-center">Data ISPU belum tersedia.</p>';
+        else h += '<div class="rounded-2xl p-4 text-white" style="background:linear-gradient(135deg,' + top.c.c + ',' + top.c.c + 'cc)"><div class="text-[10px] font-bold opacity-90 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i>LOKASI ISPU TERTINGGI</div><div class="font-extrabold text-base leading-tight mt-0.5">' + E(top.v.jenis || 'Desa') + ' ' + E(top.v.desa) + '</div><div class="text-xs opacity-95">Kecamatan ' + E(top.v.kec) + '</div><div class="flex items-end gap-3 mt-3"><div class="text-5xl font-black leading-none tabular-nums">' + top.isp.toLocaleString('id-ID') + '</div><div class="pb-1"><div class="text-[10px] font-bold opacity-90">KATEGORI</div><div class="font-extrabold">' + E(top.c.n) + '</div></div></div><div class="text-[11px] mt-2 opacity-95">Parameter dominan: <b>' + E(top.dom.n) + '</b></div></div>' +
+            '<div>' + lb('KONSENTRASI DI LOKASI TERTINGGI (µg/m³) · sesuai waktu rata-rata tiap parameter') + grid + tiles(top, false) + '</div></div>' +
+            (av ? '<div class="pt-3 border-t border-dashed border-slate-200 dark:border-slate-700"><div class="flex flex-wrap items-center justify-between gap-2 mb-1.5"><div class="text-[11px] font-bold text-slate-500 dark:text-slate-400">RATA-RATA KONSENTRASI KABUPATEN KATINGAN (µg/m³)</div>' + chip(av.c, true) + '</div><div class="text-[11px] text-slate-400 mb-2">Rata-rata dari ' + av.n + ' desa/kelurahan · ISPU dari rata-rata: <b class="text-slate-600 dark:text-slate-200">' + av.isp.toLocaleString('id-ID') + '</b> (dominan ' + E(av.dom.n) + ')</div>' + grid + tiles(av, false) + '</div></div>' : '') +
+            '<div class="flex flex-wrap gap-2"><button type="button" id="kab-map" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl text-white bg-sky-600 hover:bg-sky-700"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>Lihat lokasi di peta</button><button type="button" id="kab-det" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"><i data-lucide="list" class="w-3.5 h-3.5"></i>Lihat per desa/kelurahan</button></div>';
         h += '<p class="text-[11px] text-slate-400">ISPU = sub-indeks tertinggi dari parameter tersedia (Permen LHK 14/2020), tidak dibatasi 500. HC tidak tersedia pada model CAMS. Estimasi model (±40 km), dapat berbeda dari stasiun pemantau DLH.</p></div>';
         m.innerHTML = h; document.body.appendChild(m);
         var close = function () { m.remove(); document.removeEventListener('keydown', esc); }, esc = function (e) { if (e.key === 'Escape') close(); };
         $('kab-x').onclick = close; m.addEventListener('click', function (e) { if (e.target === m) close(); }); document.addEventListener('keydown', esc);
         var d = $('kab-det'); if (d) d.onclick = function () { close(); $('kualitas-udara').scrollIntoView({ behavior: 'smooth' }); };
+        var mp = $('kab-map'); if (mp && top) mp.onclick = function () { close(); showOnMap(top.v.kode); };
         $('kab-x').focus();
     }
-    /* Kartu ISPU kabupaten: mewakili Kabupaten Katingan = ibukota Kasongan (Kec. Katingan Hilir).
-       Kasongan terdiri dari Kelurahan Kasongan Baru & Kasongan Lama; dipakai yang tertinggi. Tidak ikut filter wilayah. */
-    var IBUKOTA = ['62.06.02.1003', '62.06.02.1004'];
     function cardPM() {
         var val = $('pm-val'), sub = $('pm-sub'), cc = $('pm-chip'); if (!val) return;
         if (!PM.ok) { val.textContent = '–'; sub.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
-        var best = null;
-        IBUKOTA.forEach(function (k) { var s = stat(PM.v[k]); if (s && s.isp != null && (!best || s.isp > best.isp)) best = s; });
-        if (!best) { val.textContent = '–'; sub.textContent = 'Data Kasongan belum tersedia'; cc.innerHTML = ''; return; }
+        var best = topISPU();
+        if (!best) { val.textContent = '–'; sub.textContent = 'Data ISPU belum tersedia'; cc.innerHTML = ''; return; }
         val.innerHTML = best.isp.toLocaleString('id-ID') + ' <small>ISPU</small>';
         cc.innerHTML = chip(best.c, true);
-        sub.textContent = 'Kasongan · Dominan: ' + best.dom.n;
+        sub.textContent = 'Tertinggi: ' + lokasi(best.v) + ' · Dominan: ' + best.dom.n;
+        $('pm-card').title = 'ISPU tertinggi se-kabupaten: ' + lokasi(best.v);
     }
     function ispaCalc(kec) {
         var l = ISPA.filter(function (r) { return !kec || r.kec === kec; });
