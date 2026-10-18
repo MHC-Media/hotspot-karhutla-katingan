@@ -5,7 +5,7 @@
    - data API (GET) & cuaca              : jaringan dulu (maks 4,5 dtk), lalu data terakhir -> peta tidak kosong saat sinyal lemah
    - pustaka CDN (Leaflet, Chart, dll)   : cache dulu, tidak diunduh ulang
    - tile peta & semua POST (login/simpan): tidak pernah dicache */
-const VERSI = 'karhutla-v5.10.2';
+const VERSI = 'karhutla-v5.10.3';
 const DATA = 'karhutla-data';           // cache data API, bertahan antar-versi
 const SHELL = ['./', 'index.html', 'admin.html', 'manifest.webmanifest', 'js/pwa.js', 'js/ui.js', 'js/luas.js', 'js/publik-plus.js', 'js/analisis.js', 'js/admin-plus.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/logo-96.png', 'icons/favicon-48.png'];
 const API = ['script.google.com', 'script.googleusercontent.com', 'api.open-meteo.com', 'air-quality-api.open-meteo.com', 'api.bmkg.go.id', 'data.bmkg.go.id'];
